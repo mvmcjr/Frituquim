@@ -1,0 +1,99 @@
+﻿<ui:UiPage x:Class="Frituquim.Views.Pages.DashboardPage"
+           xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+           xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+           xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+           xmlns:local="clr-namespace:Frituquim.Views.Pages"
+           xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+           xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+           xmlns:helpers="clr-namespace:Frituquim.Helpers"
+           xmlns:calcBinding="clr-namespace:CalcBinding;assembly=CalcBinding"
+           Title="DashboardPage"
+           d:DataContext="{d:DesignInstance local:DashboardPage, IsDesignTimeCreatable=False}"
+           d:DesignHeight="450"
+           d:DesignWidth="800"
+           d:Background="{DynamicResource ApplicationBackgroundBrush}"
+           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+           mc:Ignorable="d">
+	<ui:UiPage.Resources>
+		<BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </ui:UiPage.Resources>
+
+	<Grid Margin="56,0" VerticalAlignment="Top" helpers:MarginSetter.Margin="0,4">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+		</Grid.RowDefinitions>
+
+		<TextBlock FontSize="28"
+                   FontWeight="Bold"
+                   Text="Olá Pimdal 💖" />
+
+		<Grid Grid.Row="1" helpers:MarginSetter.Margin="8,0,0,0">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="Auto" />
+				<ColumnDefinition Width="Auto" />
+				<ColumnDefinition Width="Auto" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition />
+				<RowDefinition Height="*" />
+			</Grid.RowDefinitions>
+
+			<CheckBox Content="Abrir pasta depois de extrair"
+                      VerticalAlignment="Bottom"
+                      IsChecked="{Binding ViewModel.OpenFolderAfterExtraction}" />
+			<CheckBox Grid.Row="0" Grid.Column="1" Content="Criar pasta com o nome do vídeo"
+					  VerticalAlignment="Bottom"
+                      IsChecked="{Binding ViewModel.CreateSubfolders}" />
+
+			<StackPanel Grid.Row="0" Grid.Column="2">
+				<TextBlock Text="Tempo limite de extração" Margin="0,0,0,4" />
+				<ui:TextBox PlaceholderText="00:01:30" Text="{Binding ViewModel.ExtractionTimeLimit, ValidatesOnDataErrors=True, TargetNullValue=''}" />
+			</StackPanel>
+		</Grid>
+
+
+
+		<Grid Grid.Row="3" Margin="0, 1, 0, 0">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition />
+				<ColumnDefinition Width="Auto" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition/>
+				<RowDefinition/>
+			</Grid.RowDefinitions>
+			<ui:TextBox PlaceholderText="Diretório de saída" Text="{Binding ViewModel.OutputDirectory}" />
+			<ui:Button Margin="4,0,0,0" Grid.Row="0" Grid.Column="1" Command="{Binding ViewModel.OpenOutputDirectoryDialogCommand}"
+                    Content="Selecionar diretório"
+					Icon="Folder16"
+                    VerticalAlignment="Stretch"
+                    HorizontalAlignment="Stretch" />
+
+			<ui:TextBox Margin="0, 8, 0, 0" Grid.Row="1" Grid.Column="0" PlaceholderText="URL do youtube ou caminho do arquivo"
+                        Text="{Binding ViewModel.VideoPathOrUrl}" />
+			<ui:Button Margin="4, 8,0,0" Grid.Row="1" Grid.Column="1" Command="{Binding ViewModel.OpenFileDialogCommand}"
+                    Content="Selecionar arquivo"
+					Icon="MoviesAndTv16"
+                    VerticalAlignment="Stretch"
+                    HorizontalAlignment="Stretch"
+			/>
+		</Grid>
+
+		<Grid Grid.Row="4">
+			<ui:Button Appearance="Primary" Command="{Binding ViewModel.ExtractFramesCommand}"
+                       IsEnabled="{Binding ViewModel.IsExtractButtonEnabled}">
+				<StackPanel>
+					<TextBlock Text="Extrair frames" Foreground="#FFFFFFFF"
+                               Visibility="{Binding ViewModel.IsExtractButtonEnabled, Converter={StaticResource BooleanToVisibilityConverter}}" />
+					<ui:ProgressRing IsIndeterminate="{calcBinding:Binding ViewModel.ShowIndeterminateProgress}" Progress="{Binding ViewModel.CurrentProgress}" Height="20" Width="20"
+                                     Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />
+				</StackPanel>
+			</ui:Button>
+		</Grid>
+    </Grid>
+</ui:UiPage>
