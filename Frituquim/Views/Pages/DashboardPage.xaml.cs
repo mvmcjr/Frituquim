@@ -1,20 +1,22 @@
-﻿using Wpf.Ui.Common.Interfaces;
+﻿using Frituquim.ViewModels;
+using Wpf.Ui.Controls;
 
 namespace Frituquim.Views.Pages
 {
     /// <summary>
     /// Interaction logic for DashboardPage.xaml
     /// </summary>
-    public partial class DashboardPage : INavigableView<ViewModels.DashboardViewModel>
+    public partial class DashboardPage : INavigableView<DashboardViewModel>
     {
-        public ViewModels.DashboardViewModel ViewModel
+        public DashboardViewModel ViewModel
         {
             get;
         }
 
-        public DashboardPage(ViewModels.DashboardViewModel viewModel)
+        public DashboardPage(DashboardViewModel viewModel)
         {
             ViewModel = viewModel;
+            DataContext = this;
 
             InitializeComponent();
         }

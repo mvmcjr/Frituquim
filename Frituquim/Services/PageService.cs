@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows;
-using Wpf.Ui.Mvvm.Contracts;
+using Wpf.Ui;
 
 namespace Frituquim.Services
 {
@@ -23,7 +23,8 @@ namespace Frituquim.Services
         }
 
         /// <inheritdoc />
-        public T? GetPage<T>() where T : class
+        public T? GetPage<T>()
+            where T : class
         {
             if (!typeof(FrameworkElement).IsAssignableFrom(typeof(T)))
                 throw new InvalidOperationException("The page should be a WPF control.");

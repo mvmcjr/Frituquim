@@ -1,15 +1,12 @@
 ﻿using System;
-using Frituquim.Models;
 using Frituquim.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.IO;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
-using Wpf.Ui.Mvvm.Contracts;
-using Wpf.Ui.Mvvm.Services;
+using Wpf.Ui;
 
 namespace Frituquim
 {
@@ -23,7 +20,7 @@ namespace Frituquim
         // https://docs.microsoft.com/dotnet/core/extensions/dependency-injection
         // https://docs.microsoft.com/dotnet/core/extensions/configuration
         // https://docs.microsoft.com/dotnet/core/extensions/logging
-        private static readonly IHost _host = Host
+        private static readonly IHost Host = Microsoft.Extensions.Hosting.Host
             .CreateDefaultBuilder()
             .ConfigureAppConfiguration(c => { c.SetBasePath(Path.GetDirectoryName(AppContext.BaseDirectory)!); })
             .ConfigureServices((context, services) =>
@@ -52,7 +49,6 @@ namespace Frituquim
                 // Views and ViewModels
                 services.AddScoped<Views.Pages.DashboardPage>();
                 services.AddScoped<ViewModels.DashboardViewModel>();
-                services.AddScoped<ViewModels.SettingsViewModel>();
             }).Build();
 
         /// <summary>
@@ -63,7 +59,7 @@ namespace Frituquim
         public static T GetService<T>()
             where T : class
         {
-            return _host.Services.GetRequiredService<T>();
+            return Host.Services.GetRequiredService<T>();
         }
 
         /// <summary>
@@ -71,7 +67,7 @@ namespace Frituquim
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
-            await _host.StartAsync();
+            await Host.StartAsync();
         }
 
         /// <summary>
@@ -79,9 +75,9 @@ namespace Frituquim
         /// </summary>
         private async void OnExit(object sender, ExitEventArgs e)
         {
-            await _host.StopAsync();
+            await Host.StopAsync();
 
-            _host.Dispose();
+            Host.Dispose();
         }
 
         /// <summary>

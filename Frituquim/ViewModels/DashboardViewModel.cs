@@ -10,20 +10,19 @@ using FrameExtractor;
 using FrameExtractor.Extensions;
 using Frituquim.Helpers;
 using Frituquim.Models;
-using Wpf.Ui.Common;
-using Wpf.Ui.Mvvm.Contracts;
+using Wpf.Ui;
+using Wpf.Ui.Controls;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace Frituquim.ViewModels
 {
     public record ExecutionMessage(string Title, string Message);
-    
+
     public record ExecutionMessageMap(ExecutionMessage Success, ExecutionMessage Error);
-    
+
     public partial class DashboardViewModel : ObservableObject
     {
-        [ObservableProperty]
-        private string _videoPathOrUrl = "https://www.youtube.com/watch?v=vaphaFCyLQI";
+        [ObservableProperty] private string _videoPathOrUrl = "https://www.youtube.com/watch?v=vaphaFCyLQI";
 
         [ObservableProperty]
         private string _outputDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
@@ -33,32 +32,27 @@ namespace Frituquim.ViewModels
         [NotifyPropertyChangedFor(nameof(IsLoading))]
         private bool _isExtractButtonEnabled = true;
 
-        [ObservableProperty]
-        private bool _createSubfolders = true;
+        [ObservableProperty] private bool _createSubfolders = true;
 
-        [ObservableProperty]
-        private bool _openFolderAfterExecution = true;
-        
-        [ObservableProperty]
-        private TimeSpan? _extractionTimeLimit;
+        [ObservableProperty] private bool _openFolderAfterExecution = true;
 
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(ShowIndeterminateProgress))]
+        [ObservableProperty] private TimeSpan? _extractionTimeLimit;
+
+        [ObservableProperty] [NotifyPropertyChangedFor(nameof(ShowIndeterminateProgress))]
         private double? _currentProgress;
-        
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ShowFrameControls))]
         [NotifyPropertyChangedFor(nameof(ExecuteButtonText))]
         private ExtractionType _selectedExtractionType = ExtractionType.Frames;
-        
-        [ObservableProperty]
-        private ICollection<ExtractionType> _extractionTypes = new List<ExtractionType>
+
+        [ObservableProperty] private ICollection<ExtractionType> _extractionTypes = new List<ExtractionType>
         {
             ExtractionType.Frames,
             ExtractionType.Video,
             ExtractionType.Audio
         };
-        
+
         public bool ShowFrameControls => SelectedExtractionType == ExtractionType.Frames;
 
         public bool ShowIndeterminateProgress => !CurrentProgress.HasValue;
@@ -94,7 +88,7 @@ namespace Frituquim.ViewModels
                     )
                 }
             };
-        
+
         public DashboardViewModel(ISnackbarService snackbarService)
         {
             SnackbarService = snackbarService;
@@ -103,7 +97,7 @@ namespace Frituquim.ViewModels
         public bool IsLoading => !IsExtractButtonEnabled;
 
         public Visibility IsLoadingVisibility => IsExtractButtonEnabled ? Visibility.Collapsed : Visibility.Visible;
-        
+
         public string ExecuteButtonText => SelectedExtractionType switch
         {
             ExtractionType.Frames => "Extrair Frames",
@@ -113,7 +107,7 @@ namespace Frituquim.ViewModels
         };
 
         private ISnackbarService SnackbarService { get; }
-        
+
 
         [RelayCommand]
         private void OpenFileDialog()
@@ -146,7 +140,7 @@ namespace Frituquim.ViewModels
                 {
                     await ExtractFrames();
                 }
-            
+
                 var fileName = await YtdlpHelper.GetFileName(VideoPathOrUrl, SelectedExtractionType);
                 var downloadFilePath = Path.Combine(OutputDirectory, fileName);
 
@@ -162,18 +156,20 @@ namespace Frituquim.ViewModels
                     .ExecuteAsync()
                     .Task
                     .ContinueWith(t => t.IsCompletedSuccessfully);
-                
+
                 var messageMap = _messageMap[SelectedExtractionType];
-                
+
                 if (!downloadedFile)
                 {
-                    await SnackbarService.ShowAsync(messageMap.Error.Title, messageMap.Error.Message, SymbolRegular.EqualCircle24, ControlAppearance.Danger);
+                    SnackbarService.Show(messageMap.Error.Title, messageMap.Error.Message, ControlAppearance.Danger,
+                        null, TimeSpan.FromSeconds(3));
                     IsExtractButtonEnabled = true;
                     return;
                 }
 
-                await SnackbarService.ShowAsync(messageMap.Success.Title, messageMap.Success.Message, SymbolRegular.CheckmarkCircle24, ControlAppearance.Success);
-                
+                SnackbarService.Show(messageMap.Success.Title, messageMap.Success.Message, ControlAppearance.Success,
+                    null, TimeSpan.FromSeconds(3));
+
                 if (OpenFolderAfterExecution)
                 {
                     System.Diagnostics.Process.Start("explorer", OutputDirectory);
@@ -184,7 +180,7 @@ namespace Frituquim.ViewModels
                 IsExtractButtonEnabled = true;
             }
         }
-        
+
         private async Task ExtractFrames()
         {
             var isUrl = Uri.IsWellFormedUriString(VideoPathOrUrl, UriKind.Absolute);
@@ -199,19 +195,24 @@ namespace Frituquim.ViewModels
                     File.Delete(tempFilePath);
                 }
 
-                var downloadedVideo = await YtdlpHelper.CreateYtdlpCommand(VideoPathOrUrl, tempFilePath, Array.Empty<string>())
+                var downloadedVideo = await YtdlpHelper
+                    .CreateYtdlpCommand(VideoPathOrUrl, tempFilePath, Array.Empty<string>())
                     .ExecuteAsync()
                     .Task
                     .ContinueWith(t => t.IsCompletedSuccessfully);
 
                 if (!downloadedVideo)
                 {
-                    await SnackbarService.ShowAsync("Erro ao baixar o video!", "Ocorreu um erro ao baixar o video, tente novamente.", SymbolRegular.EqualCircle24, ControlAppearance.Danger);
+                    SnackbarService.Show("Erro ao baixar o video!",
+                        "Ocorreu um erro ao baixar o video, tente novamente.", ControlAppearance.Danger, null,
+                        TimeSpan.FromSeconds(3));
                     IsExtractButtonEnabled = true;
                     return;
                 }
 
-                await SnackbarService.ShowAsync("Video baixado com sucesso!", "O video foi baixado com sucesso e a extração de frames será iniciada.", SymbolRegular.CheckmarkCircle24, ControlAppearance.Success);
+                SnackbarService.Show("Video baixado com sucesso!",
+                    "O video foi baixado com sucesso e a extração de frames será iniciada.", ControlAppearance.Success,
+                    null, TimeSpan.FromSeconds(3));
                 await ExtractFramesToFolder(tempFilePath);
                 File.Delete(tempFilePath);
             }
@@ -236,8 +237,9 @@ namespace Frituquim.ViewModels
                 TimeLimit = ExtractionTimeLimit,
                 FrameFormat = FrameFormat.Png
             };
-            
-            await foreach (var frame in FrameExtractionService.Default.GetFrames(filePath, options: frameExtractionOptions, onDurationUpdate: OnDurationUpdate))
+
+            await foreach (var frame in FrameExtractionService.Default.GetFrames(filePath,
+                               options: frameExtractionOptions, onDurationUpdate: OnDurationUpdate))
             {
                 await WriteFrame(frame, basePath);
             }
@@ -252,12 +254,14 @@ namespace Frituquim.ViewModels
 
         private void OnDurationUpdate(TimeSpan maxDuration, TimeSpan currentDuration)
         {
-            CurrentProgress = currentDuration.TotalSeconds / (ExtractionTimeLimit?.TotalSeconds ?? maxDuration.TotalSeconds) * 100;
+            CurrentProgress = currentDuration.TotalSeconds /
+                (ExtractionTimeLimit?.TotalSeconds ?? maxDuration.TotalSeconds) * 100;
         }
 
         private static async Task WriteFrame(Frame frame, string basePath)
         {
-            var outputPath = Path.Combine(basePath, $"frame-{frame.Position}{frame.Options.FrameFormat.GetPipeFormat()}");
+            var outputPath = Path.Combine(basePath,
+                $"frame-{frame.Position}{frame.Options.FrameFormat.GetPipeFormat()}");
 
             await File.WriteAllBytesAsync(outputPath, frame.Data);
         }

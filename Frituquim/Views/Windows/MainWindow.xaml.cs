@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Drawing;
 using System.Windows;
-using System.Windows.Controls;
-using Wpf.Ui.Controls.Interfaces;
-using Wpf.Ui.Mvvm.Contracts;
+using System.Windows.Media;
+using Frituquim.ViewModels;
+using Wpf.Ui;
+using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
+using Color = System.Windows.Media.Color;
 
 namespace Frituquim.Views.Windows
 {
@@ -11,42 +15,41 @@ namespace Frituquim.Views.Windows
     /// </summary>
     public partial class MainWindow : INavigationWindow
     {
-        public ViewModels.MainWindowViewModel ViewModel
-        {
-            get;
-        }
+        public MainWindowViewModel ViewModel { get; }
 
-        public MainWindow(ViewModels.MainWindowViewModel viewModel, IPageService pageService, INavigationService navigationService, ISnackbarService snackbarService)
+        public MainWindow(
+            MainWindowViewModel viewModel,
+            IPageService pageService,
+            INavigationService navigationService,
+            ISnackbarService snackbarService,
+            IThemeService themeService
+        )
         {
             ViewModel = viewModel;
             DataContext = this;
+
+            SystemThemeWatcher.Watch(this);
 
             InitializeComponent();
             SetPageService(pageService);
 
             navigationService.SetNavigationControl(RootNavigation);
-            snackbarService.SetSnackbarControl(RootSnackbar);
+            snackbarService.SetSnackbarPresenter(SnackbarPresenter);
+
+            themeService.SetAccent((SolidColorBrush)new BrushConverter().ConvertFrom("#9a00e5")!);
         }
 
         #region INavigationWindow methods
 
-        public Frame GetFrame()
-            => RootFrame;
+        public INavigationView GetNavigation() => RootNavigation;
 
-        public INavigation GetNavigation()
-            => RootNavigation;
+        public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
 
-        public bool Navigate(Type pageType)
-            => RootNavigation.Navigate(pageType);
+        public void SetPageService(IPageService pageService) => RootNavigation.SetPageService(pageService);
 
-        public void SetPageService(IPageService pageService)
-            => RootNavigation.PageService = pageService;
+        public void ShowWindow() => Show();
 
-        public void ShowWindow()
-            => Show();
-
-        public void CloseWindow()
-            => Close();
+        public void CloseWindow() => Close();
 
         #endregion INavigationWindow methods
 
@@ -59,6 +62,16 @@ namespace Frituquim.Views.Windows
 
             // Make sure that closing this window will begin the process of closing the application.
             Application.Current.Shutdown();
+        }
+
+        INavigationView INavigationWindow.GetNavigation()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetServiceProvider(IServiceProvider serviceProvider)
+        {
+            throw new NotImplementedException();
         }
     }
 }
