@@ -1,23 +1,34 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CliWrap;
 using CliWrap.Buffered;
+using Frituquim.Models;
 
 namespace Frituquim.Helpers;
 
 public static class YtdlpHelper
 {
-    public static async Task<string> GetFileName(string url)
+    public static async Task<string> GetFileName(string url, ExtractionType selectedExtractionType)
     {
         var commandResult = await CreateBaseCommand()
             .WithArguments(new[] { url, "--get-filename" })
             .ExecuteBufferedAsync();
-        return commandResult.StandardOutput.Trim();
+        var fileName = commandResult.StandardOutput.Trim();
+
+        if (selectedExtractionType == ExtractionType.Audio)
+        {
+            fileName = $"{Path.GetFileNameWithoutExtension(fileName)}.mp3";
+        }
+        
+        return fileName;
     }
 
-    public static Command CreateYtdlpCommand(string url, string filePath) =>
+    public static Command CreateYtdlpCommand(string url, string filePath, IEnumerable<string> extraArguments) =>
         CreateBaseCommand()
-            .WithArguments(new[] { url, "-o", filePath }, true);
+            .WithArguments(new[] { url, "--no-mtime", "-o", filePath }.Concat(extraArguments), true);
 
     private static Command CreateBaseCommand() =>
         Cli.Wrap("yt-dlp")

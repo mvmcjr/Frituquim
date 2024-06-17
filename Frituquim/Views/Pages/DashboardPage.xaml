@@ -26,13 +26,16 @@
 			<RowDefinition Height="Auto" />
 			<RowDefinition Height="Auto" />
 			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
 		</Grid.RowDefinitions>
 
 		<TextBlock FontSize="28"
                    FontWeight="Bold"
                    Text="Olá Pimdal 💖" />
+		
+		<ComboBox Grid.Row="1" ItemsSource="{Binding ViewModel.ExtractionTypes}" SelectedItem="{Binding ViewModel.SelectedExtractionType}" />
 
-		<Grid Grid.Row="1" helpers:MarginSetter.Margin="8,0,0,0">
+		<Grid Grid.Row="2" helpers:MarginSetter.Margin="8,0,0,0">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="Auto" />
 				<ColumnDefinition Width="Auto" />
@@ -45,12 +48,13 @@
 
 			<CheckBox Content="Abrir pasta depois de extrair"
                       VerticalAlignment="Bottom"
-                      IsChecked="{Binding ViewModel.OpenFolderAfterExtraction}" />
+                      IsChecked="{Binding ViewModel.OpenFolderAfterExecution}" />
 			<CheckBox Grid.Row="0" Grid.Column="1" Content="Criar pasta com o nome do vídeo"
 					  VerticalAlignment="Bottom"
+					  Visibility="{Binding ViewModel.ShowFrameControls, Converter={StaticResource BooleanToVisibilityConverter}}"
                       IsChecked="{Binding ViewModel.CreateSubfolders}" />
 
-			<StackPanel Grid.Row="0" Grid.Column="2">
+			<StackPanel Grid.Row="0" Grid.Column="2" Visibility="{Binding ViewModel.ShowFrameControls, Converter={StaticResource BooleanToVisibilityConverter}}">
 				<TextBlock Text="Tempo limite de extração" Margin="0,0,0,4" />
 				<ui:TextBox PlaceholderText="00:01:30" Text="{Binding ViewModel.ExtractionTimeLimit, ValidatesOnDataErrors=True, TargetNullValue=''}" />
 			</StackPanel>
@@ -58,7 +62,7 @@
 
 
 
-		<Grid Grid.Row="3" Margin="0, 1, 0, 0">
+		<Grid Grid.Row="4" Margin="0, 1, 0, 0">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition />
 				<ColumnDefinition Width="Auto" />
@@ -84,11 +88,11 @@
 			/>
 		</Grid>
 
-		<Grid Grid.Row="4">
-			<ui:Button Appearance="Primary" Command="{Binding ViewModel.ExtractFramesCommand}"
+		<Grid Grid.Row="5">
+			<ui:Button Appearance="Primary" Command="{Binding ViewModel.ExecuteCommand}"
                        IsEnabled="{Binding ViewModel.IsExtractButtonEnabled}">
 				<StackPanel>
-					<TextBlock Text="Extrair frames" Foreground="#FFFFFFFF"
+					<TextBlock Text="{Binding ViewModel.ExecuteButtonText}" Foreground="#FFFFFFFF"
                                Visibility="{Binding ViewModel.IsExtractButtonEnabled, Converter={StaticResource BooleanToVisibilityConverter}}" />
 					<ui:ProgressRing IsIndeterminate="{calcBinding:Binding ViewModel.ShowIndeterminateProgress}" Progress="{Binding ViewModel.CurrentProgress}" Height="20" Width="20"
                                      Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />

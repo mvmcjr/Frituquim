@@ -1,22 +1,25 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
-using System.Windows.Markup;
-using CliWrap;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FrameExtractor;
 using FrameExtractor.Extensions;
 using Frituquim.Helpers;
+using Frituquim.Models;
 using Wpf.Ui.Common;
-using Wpf.Ui.Common.Interfaces;
 using Wpf.Ui.Mvvm.Contracts;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace Frituquim.ViewModels
 {
+    public record ExecutionMessage(string Title, string Message);
+    
+    public record ExecutionMessageMap(ExecutionMessage Success, ExecutionMessage Error);
+    
     public partial class DashboardViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -34,7 +37,7 @@ namespace Frituquim.ViewModels
         private bool _createSubfolders = true;
 
         [ObservableProperty]
-        private bool _openFolderAfterExtraction = true;
+        private bool _openFolderAfterExecution = true;
         
         [ObservableProperty]
         private TimeSpan? _extractionTimeLimit;
@@ -42,9 +45,56 @@ namespace Frituquim.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ShowIndeterminateProgress))]
         private double? _currentProgress;
+        
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ShowFrameControls))]
+        [NotifyPropertyChangedFor(nameof(ExecuteButtonText))]
+        private ExtractionType _selectedExtractionType = ExtractionType.Frames;
+        
+        [ObservableProperty]
+        private ICollection<ExtractionType> _extractionTypes = new List<ExtractionType>
+        {
+            ExtractionType.Frames,
+            ExtractionType.Video,
+            ExtractionType.Audio
+        };
+        
+        public bool ShowFrameControls => SelectedExtractionType == ExtractionType.Frames;
 
         public bool ShowIndeterminateProgress => !CurrentProgress.HasValue;
 
+        private static Dictionary<ExtractionType, ExecutionMessageMap> _messageMap =
+            new()
+            {
+                {
+                    ExtractionType.Frames,
+                    new ExecutionMessageMap(
+                        new ExecutionMessage("Frames extraídos com sucesso!",
+                            "Os frames foram extraídos com sucesso e salvos no diretório de saída."),
+                        new ExecutionMessage("Erro ao extrair frames!",
+                            "Ocorreu um erro ao extrair os frames, tente novamente.")
+                    )
+                },
+                {
+                    ExtractionType.Audio,
+                    new ExecutionMessageMap(
+                        new ExecutionMessage("Audio extraído com sucesso!",
+                            "O audio foi extraído com sucesso e salvo no diretório de saída."),
+                        new ExecutionMessage("Erro ao extrair audio!",
+                            "Ocorreu um erro ao extrair o audio, tente novamente.")
+                    )
+                },
+                {
+                    ExtractionType.Video,
+                    new ExecutionMessageMap(
+                        new ExecutionMessage("Video baixado com sucesso!",
+                            "O video foi baixado com sucesso e salvo no diretório de saída."),
+                        new ExecutionMessage("Erro ao baixar video!",
+                            "Ocorreu um erro ao baixar o video, tente novamente.")
+                    )
+                }
+            };
+        
         public DashboardViewModel(ISnackbarService snackbarService)
         {
             SnackbarService = snackbarService;
@@ -53,6 +103,14 @@ namespace Frituquim.ViewModels
         public bool IsLoading => !IsExtractButtonEnabled;
 
         public Visibility IsLoadingVisibility => IsExtractButtonEnabled ? Visibility.Collapsed : Visibility.Visible;
+        
+        public string ExecuteButtonText => SelectedExtractionType switch
+        {
+            ExtractionType.Frames => "Extrair Frames",
+            ExtractionType.Video => "Baixar Video",
+            ExtractionType.Audio => "Baixar Audio",
+            _ => "Extrair"
+        };
 
         private ISnackbarService SnackbarService { get; }
         
@@ -78,14 +136,62 @@ namespace Frituquim.ViewModels
         }
 
         [RelayCommand]
-        private async Task ExtractFrames()
+        private async Task Execute()
         {
             IsExtractButtonEnabled = false;
+
+            try
+            {
+                if (SelectedExtractionType == ExtractionType.Frames)
+                {
+                    await ExtractFrames();
+                }
+            
+                var fileName = await YtdlpHelper.GetFileName(VideoPathOrUrl, SelectedExtractionType);
+                var downloadFilePath = Path.Combine(OutputDirectory, fileName);
+
+                if (File.Exists(downloadFilePath))
+                {
+                    File.Delete(downloadFilePath);
+                }
+
+                var downloadedFile = await YtdlpHelper.CreateYtdlpCommand(VideoPathOrUrl, downloadFilePath,
+                        SelectedExtractionType == ExtractionType.Audio
+                            ? new[] { "-x", "--audio-format", "mp3" }
+                            : Array.Empty<string>())
+                    .ExecuteAsync()
+                    .Task
+                    .ContinueWith(t => t.IsCompletedSuccessfully);
+                
+                var messageMap = _messageMap[SelectedExtractionType];
+                
+                if (!downloadedFile)
+                {
+                    await SnackbarService.ShowAsync(messageMap.Error.Title, messageMap.Error.Message, SymbolRegular.EqualCircle24, ControlAppearance.Danger);
+                    IsExtractButtonEnabled = true;
+                    return;
+                }
+
+                await SnackbarService.ShowAsync(messageMap.Success.Title, messageMap.Success.Message, SymbolRegular.CheckmarkCircle24, ControlAppearance.Success);
+                
+                if (OpenFolderAfterExecution)
+                {
+                    System.Diagnostics.Process.Start("explorer", OutputDirectory);
+                }
+            }
+            finally
+            {
+                IsExtractButtonEnabled = true;
+            }
+        }
+        
+        private async Task ExtractFrames()
+        {
             var isUrl = Uri.IsWellFormedUriString(VideoPathOrUrl, UriKind.Absolute);
 
             if (isUrl)
             {
-                var fileName = await YtdlpHelper.GetFileName(VideoPathOrUrl);
+                var fileName = await YtdlpHelper.GetFileName(VideoPathOrUrl, ExtractionType.Frames);
                 var tempFilePath = Path.Combine(Path.GetTempPath(), fileName);
 
                 if (File.Exists(tempFilePath))
@@ -93,7 +199,7 @@ namespace Frituquim.ViewModels
                     File.Delete(tempFilePath);
                 }
 
-                var downloadedVideo = await YtdlpHelper.CreateYtdlpCommand(VideoPathOrUrl, tempFilePath)
+                var downloadedVideo = await YtdlpHelper.CreateYtdlpCommand(VideoPathOrUrl, tempFilePath, Array.Empty<string>())
                     .ExecuteAsync()
                     .Task
                     .ContinueWith(t => t.IsCompletedSuccessfully);
@@ -113,8 +219,6 @@ namespace Frituquim.ViewModels
             {
                 await ExtractFramesToFolder(VideoPathOrUrl);
             }
-
-            IsExtractButtonEnabled = true;
         }
 
         private async Task ExtractFramesToFolder(string filePath)
@@ -129,7 +233,8 @@ namespace Frituquim.ViewModels
 
             var frameExtractionOptions = new FrameExtractionOptions
             {
-                TimeLimit = ExtractionTimeLimit
+                TimeLimit = ExtractionTimeLimit,
+                FrameFormat = FrameFormat.Png
             };
             
             await foreach (var frame in FrameExtractionService.Default.GetFrames(filePath, options: frameExtractionOptions, onDurationUpdate: OnDurationUpdate))
@@ -139,7 +244,7 @@ namespace Frituquim.ViewModels
 
             CurrentProgress = null;
 
-            if (OpenFolderAfterExtraction)
+            if (OpenFolderAfterExecution)
             {
                 System.Diagnostics.Process.Start("explorer", basePath);
             }
