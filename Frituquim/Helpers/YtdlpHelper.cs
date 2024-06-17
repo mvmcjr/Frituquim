@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,20 @@ namespace Frituquim.Helpers;
 
 public static class YtdlpHelper
 {
+    private static string ExePath { get; } = FindYtdlp();
+
+    private static string FindYtdlp()
+    {
+        var ytdlpPath = Path.Combine(AppContext.BaseDirectory, "yt-dlp.exe");
+
+        if (File.Exists(ytdlpPath))
+        {
+            return ytdlpPath;
+        }
+        
+        return Environment.GetEnvironmentVariable("YTDLP_PATH") ?? "yt-dlp";
+    }
+
     public static async Task<string> GetFileName(string url, ExtractionType selectedExtractionType)
     {
         var commandResult = await CreateBaseCommand()
@@ -22,7 +37,7 @@ public static class YtdlpHelper
         {
             fileName = $"{Path.GetFileNameWithoutExtension(fileName)}.mp3";
         }
-        
+
         return fileName;
     }
 
@@ -31,7 +46,7 @@ public static class YtdlpHelper
             .WithArguments(new[] { url, "--no-mtime", "-o", filePath }.Concat(extraArguments), true);
 
     private static Command CreateBaseCommand() =>
-        Cli.Wrap("yt-dlp")
+        Cli.Wrap(ExePath)
             .WithStandardOutputPipe(PipeTarget.ToDelegate(c => Debug.WriteLine(c)))
             .WithStandardErrorPipe(PipeTarget.ToDelegate(c => Debug.WriteLine(c)));
 }

@@ -31,7 +31,8 @@ public class MarginSetter
         var panel = sender as Panel;
 
         // Go over the children and set margin for them:
-        foreach (FrameworkElement fe in panel.Children.OfType<FrameworkElement>())
-            fe.Margin = GetMargin(panel);
+        if (panel != null)
+            foreach (FrameworkElement fe in panel.Children.OfType<FrameworkElement>())
+                fe.Margin = GetMargin(panel);
     }
 }
