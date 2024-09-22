@@ -2,12 +2,13 @@
 using System.Windows.Forms;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Syroot.Windows.IO;
 
 namespace Frituquim.ViewModels;
 
 public partial class FrituquimBasePageWithOutputDirectory : FrituquimBasePage
 {
-    [ObservableProperty] private string _outputDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
+    [ObservableProperty] private string _outputDirectory = KnownFolders.Downloads.Path;
     
     [ObservableProperty] private bool _openFolderAfterExecution = true;
     

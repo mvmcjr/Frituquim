@@ -15,11 +15,6 @@ public partial class ExtractionViewModel(ExtractionType extractionType, ISnackba
 {
     [ObservableProperty] private string _videoPathOrUrl = "https://www.youtube.com/watch?v=vaphaFCyLQI";
     
-    [ObservableProperty]
-    private string _outputDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
-    
-    [ObservableProperty] private bool _openFolderAfterExecution = true;
-    
     [RelayCommand]
     private void OpenFileDialog()
     {

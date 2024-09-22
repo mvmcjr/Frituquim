@@ -14,46 +14,32 @@ using Wpf.Ui.Controls;
 
 namespace Frituquim.ViewModels;
 
-public partial class ConvertViewModel : ObservableObject
+public partial class ConvertViewModel(ISnackbarService snackbarService) : FrituquimBasePageWithOutputDirectory
 {
-    private ISnackbarService SnackbarService { get; }
-        
+    private ISnackbarService SnackbarService { get; } = snackbarService;
+
     [ObservableProperty] private string? _inputDirectory;
-        
+
     [ObservableProperty] private string _inputFilter = "*.MOV";
-        
+
     [ObservableProperty] private bool _inputIncludeSubDirectories = true;
-        
+
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ShowOutputDirectory))]
+    private bool _saveInSameDirectory = true;
+
     [ObservableProperty] private ConversionType _conversionType = ConversionType.Mp4;
-        
+
     [ObservableProperty] private ConversionHardware _conversionHardware = ConversionHardware.Cpu;
-        
+
     [ObservableProperty] private ICollection<ConversionHardware> _conversionHardwares = new List<ConversionHardware>
     {
         ConversionHardware.Nvidia,
         ConversionHardware.IntelQuickSync,
         ConversionHardware.Cpu
     };
-        
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsLoadingVisibility))]
-    [NotifyPropertyChangedFor(nameof(IsLoading))]
-    private bool _isExtractButtonEnabled = true;
-    
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ShowIndeterminateProgress))]
-    private double? _currentProgress;
-    
-    public bool ShowIndeterminateProgress => !CurrentProgress.HasValue;
 
-    public ConvertViewModel(ISnackbarService snackbarService)
-    {
-        SnackbarService = snackbarService;
-    }
+    public bool ShowOutputDirectory => !SaveInSameDirectory;
 
-    public bool IsLoading => !IsExtractButtonEnabled;
-
-    public Visibility IsLoadingVisibility => IsExtractButtonEnabled ? Visibility.Collapsed : Visibility.Visible;
-        
     [RelayCommand]
     private void OpenInputDirectoryDialog()
     {
@@ -63,15 +49,15 @@ public partial class ConvertViewModel : ObservableObject
             InputDirectory = fileDialog.SelectedPath;
         }
     }
-    
+
     [RelayCommand]
     private async Task ConvertVideos()
     {
         IsExtractButtonEnabled = false;
-        
+
         try
         {
-            if(InputDirectory == null)
+            if (InputDirectory == null)
             {
                 SnackbarService.Show("Diretório de entrada não selecionado!",
                     "Selecione um diretório de entrada para continuar.", ControlAppearance.Danger, null,
@@ -79,8 +65,8 @@ public partial class ConvertViewModel : ObservableObject
                 IsExtractButtonEnabled = true;
                 return;
             }
-            
-            if(!Directory.Exists(InputDirectory))
+
+            if (!Directory.Exists(InputDirectory))
             {
                 SnackbarService.Show("Diretório de entrada não encontrado!",
                     "O diretório de entrada selecionado não foi encontrado.", ControlAppearance.Danger, null,
@@ -88,10 +74,11 @@ public partial class ConvertViewModel : ObservableObject
                 IsExtractButtonEnabled = true;
                 return;
             }
-            
-            var files = Directory.GetFiles(InputDirectory, InputFilter, InputIncludeSubDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
-            
-            if(files.Length == 0)
+
+            var files = Directory.GetFiles(InputDirectory, InputFilter,
+                InputIncludeSubDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+
+            if (files.Length == 0)
             {
                 SnackbarService.Show("Nenhum arquivo encontrado!",
                     "Nenhum arquivo foi encontrado no diretório de entrada.", ControlAppearance.Danger, null,
@@ -104,15 +91,21 @@ public partial class ConvertViewModel : ObservableObject
                 .ForEachAsync(async file =>
                 {
                     var fileName = Path.GetFileName(file);
+
+                    var outputDirectory = SaveInSameDirectory
+                        ? Path.GetDirectoryName(file) ?? OutputDirectory
+                        : OutputDirectory;
+
                     var outputFilePath =
-                        Path.Combine(Path.GetDirectoryName(file)!, Path.ChangeExtension(fileName, ".mp4"));
+                        Path.Combine(outputDirectory, Path.ChangeExtension(fileName, ".mp4"));
 
                     if (File.Exists(outputFilePath))
                     {
                         File.Delete(outputFilePath);
                     }
 
-                    var ffmpegCommand = FFmpegHelper.ConvertFile(file, outputFilePath, ConversionType, ConversionHardware);
+                    var ffmpegCommand =
+                        FFmpegHelper.ConvertFile(file, outputFilePath, ConversionType, ConversionHardware);
                     var convertedFile = await ffmpegCommand
                         .ExecuteAsync()
                         .Task
@@ -127,10 +120,12 @@ public partial class ConvertViewModel : ObservableObject
                     }
                 })
                 .ProcessInParallel(3);
-            
+
             SnackbarService.Show("Conversão concluída!",
                 "Todos os vídeos foram convertidos com sucesso.", ControlAppearance.Success, null,
                 TimeSpan.FromSeconds(3));
+
+            if (OpenFolderAfterExecution) System.Diagnostics.Process.Start("explorer.exe", OutputDirectory);
         }
         finally
         {

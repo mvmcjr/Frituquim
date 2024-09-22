@@ -13,13 +13,13 @@
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Page.Resources>
-    
+
     <Grid VerticalAlignment="Top" helpers:MarginSetter.Margin="0,4">
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -29,29 +29,89 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        
-        <ui:TextBox Margin="0, 8, 0, 0" Grid.Row="1" Grid.Column="0"
-                    PlaceholderText="Diretório de Entrada"
-                    Text="{Binding ViewModel.InputDirectory}" />
-            
-        <ui:Button Margin="4,8,0,0" Grid.Row="1" Grid.Column="1"
-                   Command="{Binding ViewModel.OpenInputDirectoryDialogCommand}"
-                   Content="Selecionar diretório"
-                   Icon="Folder16"
-                   VerticalAlignment="Stretch"
-                   HorizontalAlignment="Stretch" />
-            
-        <ui:TextBox Margin="0, 8,0,0" Grid.Row="2" Grid.Column="0"
-                    PlaceholderText="Filtro de entrada"
-                    Text="{Binding ViewModel.InputFilter}" />
-            
-        <ComboBox  Margin="0, 8,0,0" Grid.Row="3" Grid.Column="0" ItemsSource="{Binding ViewModel.ConversionHardwares}"
-                   SelectedItem="{Binding ViewModel.ConversionHardware}" />
-            
-        <CheckBox Margin="4,0,0,0" Content="Incluir Subdiretórios" Grid.Row="2" Grid.Column="1"
-                  VerticalAlignment="Bottom"
-                  IsChecked="{Binding ViewModel.InputIncludeSubDirectories}" />
-        
+
+        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" helpers:MarginSetter.Margin="2, 0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <ui:TextBox Margin="0, 8, 0, 0" Grid.Row="0" Grid.Column="0"
+                        PlaceholderText="Diretório de Entrada"
+                        Text="{Binding ViewModel.InputDirectory}" />
+
+            <ui:TextBox Margin="0, 8,0,0" Grid.Row="0" Grid.Column="1"
+                        PlaceholderText="Filtro de entrada"
+                        Text="{Binding ViewModel.InputFilter}" />
+
+            <ui:Button Margin="4,8,0,0" Grid.Row="0" Grid.Column="2"
+                       Command="{Binding ViewModel.OpenInputDirectoryDialogCommand}"
+                       Content="Selecionar diretório"
+                       Icon="Folder16"
+                       VerticalAlignment="Stretch"
+                       HorizontalAlignment="Stretch" />
+        </Grid>
+
+        <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+
+            <CheckBox Margin="4,0,0,0" Grid.Column="0"
+                      VerticalAlignment="Center"
+                      IsChecked="{Binding ViewModel.InputIncludeSubDirectories}">
+                <TextBlock Text="Incluir Subdiretórios" TextWrapping="Wrap" />
+            </CheckBox>
+
+            <CheckBox Margin="4,0,0,0" Grid.Column="1"
+                      VerticalAlignment="Center"
+                      IsChecked="{Binding ViewModel.OpenFolderAfterExecution}">
+                <TextBlock Text="Abrir pasta depois de converter" TextWrapping="Wrap" />
+            </CheckBox>
+
+            <CheckBox Margin="4,0,0,0" Grid.Column="2"
+                      VerticalAlignment="Center"
+                      IsChecked="{Binding ViewModel.SaveInSameDirectory}">
+                <TextBlock Text="Salvar arquivo convertido na mesma pasta de entrada" TextWrapping="Wrap" />
+            </CheckBox>
+
+        </Grid>
+
+
+        <Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0, 1, 0, 0"
+              Visibility="{Binding ViewModel.ShowOutputDirectory, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <ui:TextBox PlaceholderText="Diretório de saída" Text="{Binding ViewModel.OutputDirectory}" />
+            <ui:Button Margin="4,0,0,0" Grid.Row="0" Grid.Column="1"
+                       Command="{Binding ViewModel.OpenOutputDirectoryDialogCommand}"
+                       Content="Selecionar diretório"
+                       Icon="Folder16"
+                       VerticalAlignment="Stretch"
+                       HorizontalAlignment="Stretch" />
+        </Grid>
+
+        <ComboBox Margin="0, 8,0,0" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                  ItemsSource="{Binding ViewModel.ConversionHardwares}"
+                  SelectedItem="{Binding ViewModel.ConversionHardware}" />
+
         <Grid Grid.Row="5" Grid.Column="0" Margin="0, 8,0,0">
             <ui:Button Appearance="Primary" Command="{Binding ViewModel.ConvertVideosCommand}"
                        IsEnabled="{Binding ViewModel.IsExtractButtonEnabled}">
