@@ -13,7 +13,7 @@ namespace Frituquim.ViewModels
             new NavigationViewItem
             {
                 Content = "Extrair Frames",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.NextFrame24 },
+                Icon = new SymbolIcon { Symbol = SymbolRegular.ImageMultiple24 },
                 TargetPageType = typeof(Views.Pages.FramesExtractionPage)
             },
             new NavigationViewItem
@@ -31,7 +31,7 @@ namespace Frituquim.ViewModels
             new NavigationViewItem
             {
                 Content = "Converter",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.ConvertRange20 },
+                Icon = new SymbolIcon { Symbol = SymbolRegular.ArrowsBidirectional24 },
                 TargetPageType = typeof(Views.Pages.ConvertPage)
             },
         ];
