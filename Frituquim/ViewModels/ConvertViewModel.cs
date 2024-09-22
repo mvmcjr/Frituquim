@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Forms.Design;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EnumerableAsyncProcessor.Extensions;
@@ -16,6 +19,8 @@ namespace Frituquim.ViewModels;
 
 public partial class ConvertViewModel(ISnackbarService snackbarService) : FrituquimBasePageWithOutputDirectory
 {
+    public Dispatcher? Dispatcher => UiApplication.Current.MainWindow?.Dispatcher;
+    
     private ISnackbarService SnackbarService { get; } = snackbarService;
 
     [ObservableProperty] private string? _inputDirectory;
@@ -39,7 +44,7 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
     };
 
     public bool ShowOutputDirectory => !SaveInSameDirectory;
-
+    
     [RelayCommand]
     private void OpenInputDirectoryDialog()
     {
@@ -54,6 +59,7 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
     private async Task ConvertVideos()
     {
         IsExtractButtonEnabled = false;
+        CurrentProgress = null;
 
         try
         {
@@ -86,6 +92,8 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                 IsExtractButtonEnabled = true;
                 return;
             }
+            
+            int processedFiles = 0;
 
             await files.ToAsyncProcessorBuilder()
                 .ForEachAsync(async file =>
@@ -118,6 +126,10 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                             TimeSpan.FromSeconds(3));
                         IsExtractButtonEnabled = true;
                     }
+
+                    Interlocked.Increment(ref processedFiles);
+                    
+                    Dispatcher?.Invoke(() => CurrentProgress = (double) processedFiles / files.Length * 100);
                 })
                 .ProcessInParallel(3);
 
@@ -125,7 +137,11 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                 "Todos os vídeos foram convertidos com sucesso.", ControlAppearance.Success, null,
                 TimeSpan.FromSeconds(3));
 
-            if (OpenFolderAfterExecution) System.Diagnostics.Process.Start("explorer.exe", OutputDirectory);
+            if (OpenFolderAfterExecution)
+            {
+                var directory = SaveInSameDirectory ? InputDirectory : OutputDirectory;
+                System.Diagnostics.Process.Start("explorer.exe", directory);
+            }
         }
         finally
         {
