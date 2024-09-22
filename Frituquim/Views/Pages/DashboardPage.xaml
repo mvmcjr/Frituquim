@@ -68,24 +68,58 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
+            
             <ui:TextBox PlaceholderText="Diretório de saída" Text="{Binding ViewModel.OutputDirectory}" />
             <ui:Button Margin="4,0,0,0" Grid.Row="0" Grid.Column="1"
+                       Visibility="{Binding ViewModel.ShowUrlInput, Converter={StaticResource BooleanToVisibilityConverter}}"
                        Command="{Binding ViewModel.OpenOutputDirectoryDialogCommand}"
                        Content="Selecionar diretório"
                        Icon="Folder16"
                        VerticalAlignment="Stretch"
                        HorizontalAlignment="Stretch" />
+            
+            <ui:TextBox Margin="0, 8, 0, 0" Grid.Row="1" Grid.Column="0"
+                        PlaceholderText="Diretório de Entrada"
+                        Visibility="{Binding ViewModel.ShowDirectoryInput, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Text="{Binding ViewModel.InputDirectory}" />
+            
+            <ui:Button Margin="4,8,0,0" Grid.Row="1" Grid.Column="1"
+                       Command="{Binding ViewModel.OpenInputDirectoryDialogCommand}"
+                       Visibility="{Binding ViewModel.ShowDirectoryInput, Converter={StaticResource BooleanToVisibilityConverter}}"
+                       Content="Selecionar diretório"
+                       Icon="Folder16"
+                       VerticalAlignment="Stretch"
+                       HorizontalAlignment="Stretch" />
+            
+            <ui:TextBox Margin="0, 8,0,0" Grid.Row="2" Grid.Column="0"
+                        PlaceholderText="Filtro de entrada"
+                        Visibility="{Binding ViewModel.ShowDirectoryInput, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Text="{Binding ViewModel.InputFilter}" />
+            
+            <ComboBox  Margin="0, 8,0,0" Grid.Row="3" Grid.Column="0" ItemsSource="{Binding ViewModel.ConversionHardwares}"
+                       SelectedItem="{Binding ViewModel.ConversionHardware}" />
+            
+            <CheckBox Margin="4,0,0,0" Content="Incluir Subdiretórios" Grid.Row="2" Grid.Column="1"
+                      VerticalAlignment="Bottom"
+                      Visibility="{Binding ViewModel.ShowDirectoryInput, Converter={StaticResource BooleanToVisibilityConverter}}"
+                      IsChecked="{Binding ViewModel.InputIncludeSubDirectories}" />
 
             <ui:TextBox Margin="0, 8, 0, 0" Grid.Row="1" Grid.Column="0"
                         PlaceholderText="URL do youtube ou caminho do arquivo"
+                        Visibility="{Binding ViewModel.ShowUrlInput, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Text="{Binding ViewModel.VideoPathOrUrl}" />
+            
             <ui:Button Margin="4, 8,0,0" Grid.Row="1" Grid.Column="1"
                        Command="{Binding ViewModel.OpenFileDialogCommand}"
+                       Visibility="{Binding ViewModel.ShowUrlInput, Converter={StaticResource BooleanToVisibilityConverter}}"
                        Content="Selecionar arquivo"
                        Icon="MoviesAndTv16"
                        VerticalAlignment="Stretch"

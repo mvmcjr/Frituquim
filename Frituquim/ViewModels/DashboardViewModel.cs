@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Forms;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EnumerableAsyncProcessor.Extensions;
 using FrameExtractor;
 using FrameExtractor.Extensions;
 using Frituquim.Helpers;
@@ -23,6 +24,18 @@ namespace Frituquim.ViewModels
     public partial class DashboardViewModel : ObservableObject
     {
         [ObservableProperty] private string _videoPathOrUrl = "https://www.youtube.com/watch?v=vaphaFCyLQI";
+        
+        [ObservableProperty] private string? _inputDirectory;
+        
+        [ObservableProperty] private string _inputFilter = "*.MOV";
+        
+        [ObservableProperty] private bool _inputIncludeSubDirectories = true;
+        
+        [ObservableProperty] private ConversionType _conversionType = ConversionType.Mp4;
+        
+        [ObservableProperty] private ConversionHardware _conversionHardware = ConversionHardware.Cpu;
+        
+        
 
         [ObservableProperty]
         private string _outputDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
@@ -43,6 +56,8 @@ namespace Frituquim.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ShowFrameControls))]
+        [NotifyPropertyChangedFor(nameof(ShowUrlInput))]
+        [NotifyPropertyChangedFor(nameof(ShowDirectoryInput))]
         [NotifyPropertyChangedFor(nameof(ExecuteButtonText))]
         private ExtractionType _selectedExtractionType = ExtractionType.Frames;
 
@@ -50,10 +65,21 @@ namespace Frituquim.ViewModels
         {
             ExtractionType.Frames,
             ExtractionType.Video,
-            ExtractionType.Audio
+            ExtractionType.Audio,
+            ExtractionType.Convert
         };
-
+        
+        [ObservableProperty] private ICollection<ConversionHardware> _conversionHardwares = new List<ConversionHardware>
+        {
+            ConversionHardware.Nvidia,
+            ConversionHardware.IntelQuickSync,
+            ConversionHardware.Cpu
+        };
         public bool ShowFrameControls => SelectedExtractionType == ExtractionType.Frames;
+
+        public bool ShowUrlInput => SelectedExtractionType is ExtractionType.Video or ExtractionType.Audio or ExtractionType.Frames;
+        
+        public bool ShowDirectoryInput => SelectedExtractionType is ExtractionType.Convert;
 
         public bool ShowIndeterminateProgress => !CurrentProgress.HasValue;
 
@@ -86,6 +112,15 @@ namespace Frituquim.ViewModels
                         new ExecutionMessage("Erro ao baixar video!",
                             "Ocorreu um erro ao baixar o video, tente novamente.")
                     )
+                },
+                {
+                    ExtractionType.Convert,
+                    new ExecutionMessageMap(
+                        new ExecutionMessage("Video convertido com sucesso!",
+                            "O video foi convertido com sucesso e salvo no diretório de saída."),
+                        new ExecutionMessage("Erro ao converter video!",
+                            "Ocorreu um erro ao converter o video, tente novamente.")
+                    )
                 }
             };
 
@@ -103,6 +138,7 @@ namespace Frituquim.ViewModels
             ExtractionType.Frames => "Extrair Frames",
             ExtractionType.Video => "Baixar Video",
             ExtractionType.Audio => "Baixar Audio",
+            ExtractionType.Convert => "Converter videos",
             _ => "Extrair"
         };
 
@@ -128,6 +164,16 @@ namespace Frituquim.ViewModels
                 OutputDirectory = fileDialog.SelectedPath;
             }
         }
+        
+        [RelayCommand]
+        private void OpenInputDirectoryDialog()
+        {
+            var fileDialog = new FolderBrowserDialog();
+            if (fileDialog.ShowDialog() == DialogResult.OK)
+            {
+                InputDirectory = fileDialog.SelectedPath;
+            }
+        }
 
         [RelayCommand]
         private async Task Execute()
@@ -139,6 +185,13 @@ namespace Frituquim.ViewModels
                 if (SelectedExtractionType == ExtractionType.Frames)
                 {
                     await ExtractFrames();
+                    return;
+                }
+                
+                if (SelectedExtractionType == ExtractionType.Convert)
+                {
+                    await ConvertVideos();
+                    return;
                 }
 
                 var fileName = await YtdlpHelper.GetFileName(VideoPathOrUrl, SelectedExtractionType);
@@ -179,6 +232,66 @@ namespace Frituquim.ViewModels
             {
                 IsExtractButtonEnabled = true;
             }
+        }
+
+        private async Task ConvertVideos()
+        {
+            if(InputDirectory == null)
+            {
+                SnackbarService.Show("Diretório de entrada não selecionado!",
+                    "Selecione um diretório de entrada para continuar.", ControlAppearance.Danger, null,
+                    TimeSpan.FromSeconds(3));
+                IsExtractButtonEnabled = true;
+                return;
+            }
+            
+            if(!Directory.Exists(InputDirectory))
+            {
+                SnackbarService.Show("Diretório de entrada não encontrado!",
+                    "O diretório de entrada selecionado não foi encontrado.", ControlAppearance.Danger, null,
+                    TimeSpan.FromSeconds(3));
+                IsExtractButtonEnabled = true;
+                return;
+            }
+            
+            var files = Directory.GetFiles(InputDirectory, InputFilter, InputIncludeSubDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+            
+            if(files.Length == 0)
+            {
+                SnackbarService.Show("Nenhum arquivo encontrado!",
+                    "Nenhum arquivo foi encontrado no diretório de entrada.", ControlAppearance.Danger, null,
+                    TimeSpan.FromSeconds(3));
+                IsExtractButtonEnabled = true;
+                return;
+            }
+
+            await files.ToAsyncProcessorBuilder()
+                .ForEachAsync(async file =>
+                {
+                    var fileName = Path.GetFileName(file);
+                    var outputFilePath =
+                        Path.Combine(Path.GetDirectoryName(file)!, Path.ChangeExtension(fileName, ".mp4"));
+
+                    if (File.Exists(outputFilePath))
+                    {
+                        File.Delete(outputFilePath);
+                    }
+
+                    var ffmpegCommand = FFmpegHelper.ConvertFile(file, outputFilePath, ConversionType, ConversionHardware);
+                    var convertedFile = await ffmpegCommand
+                        .ExecuteAsync()
+                        .Task
+                        .ContinueWith(t => t.IsCompletedSuccessfully);
+
+                    if (!convertedFile)
+                    {
+                        SnackbarService.Show("Erro ao converter video!",
+                            "Ocorreu um erro ao converter o video, tente novamente.", ControlAppearance.Danger, null,
+                            TimeSpan.FromSeconds(3));
+                        IsExtractButtonEnabled = true;
+                    }
+                })
+                .ProcessInParallel(3);
         }
 
         private async Task ExtractFrames()
