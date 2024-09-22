@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Drawing;
 using System.Windows;
 using System.Windows.Media;
 using Frituquim.ViewModels;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
-using Color = System.Windows.Media.Color;
 
 namespace Frituquim.Views.Windows
 {

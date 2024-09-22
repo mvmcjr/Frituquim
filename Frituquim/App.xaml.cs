@@ -47,8 +47,17 @@ namespace Frituquim
                 services.AddScoped<ViewModels.MainWindowViewModel>();
 
                 // Views and ViewModels
-                services.AddScoped<Views.Pages.DashboardPage>();
-                services.AddScoped<ViewModels.DashboardViewModel>();
+                services.AddScoped<Views.Pages.FramesExtractionPage>();
+                services.AddScoped<ViewModels.FramesExtractionViewModel>();
+
+                services.AddScoped<Views.Pages.ConvertPage>();
+                services.AddScoped<ViewModels.ConvertViewModel>();
+                
+                services.AddScoped<Views.Pages.AudioDownloadPage>();
+                services.AddScoped<ViewModels.AudioDownloadViewModel>();
+                
+                services.AddScoped<Views.Pages.VideoDownloadPage>();
+                services.AddScoped<ViewModels.VideoDownloadViewModel>();
             }).Build();
 
         /// <summary>

@@ -6,14 +6,14 @@ namespace Frituquim.Views.Pages
     /// <summary>
     /// Interaction logic for DashboardPage.xaml
     /// </summary>
-    public partial class DashboardPage : INavigableView<DashboardViewModel>
+    public partial class FramesExtractionPage : INavigableView<FramesExtractionViewModel>
     {
-        public DashboardViewModel ViewModel
+        public FramesExtractionViewModel ViewModel
         {
             get;
         }
 
-        public DashboardPage(DashboardViewModel viewModel)
+        public FramesExtractionPage(FramesExtractionViewModel viewModel)
         {
             ViewModel = viewModel;
             DataContext = this;
