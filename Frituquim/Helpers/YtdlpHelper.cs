@@ -22,8 +22,18 @@ public static class YtdlpHelper
         {
             return ytdlpPath;
         }
-        
+
         return Environment.GetEnvironmentVariable("YTDLP_PATH") ?? "yt-dlp";
+    }
+
+    public static async Task UpdateYtdlp()
+    {
+        var commandResult = await CreateBaseCommand()
+            .WithArguments(["--update"])
+            .WithValidation(CommandResultValidation.None)
+            .ExecuteBufferedAsync();
+
+        Debug.WriteLine(commandResult.ExitCode != 0 ? "Failed to update yt-dlp" : "yt-dlp updated successfully");
     }
 
     public static async Task<string> GetFileName(string url, ExtractionType selectedExtractionType)

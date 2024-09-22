@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using Frituquim.Helpers;
 using Wpf.Ui;
 
 namespace Frituquim
@@ -77,6 +78,7 @@ namespace Frituquim
         private async void OnStartup(object sender, StartupEventArgs e)
         {
             await Host.StartAsync();
+            await YtdlpHelper.UpdateYtdlp();
         }
 
         /// <summary>
