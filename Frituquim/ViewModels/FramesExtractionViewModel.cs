@@ -134,7 +134,7 @@ namespace Frituquim.ViewModels
         private static async Task WriteFrame(Frame frame, string basePath)
         {
             var outputPath = Path.Combine(basePath,
-                $"frame-{frame.Position}{frame.Options.FrameFormat.GetPipeFormat()}");
+                $"frame-{frame.Position}.{frame.Options.FrameFormat.ToString()}");
 
             await File.WriteAllBytesAsync(outputPath, frame.Data);
         }

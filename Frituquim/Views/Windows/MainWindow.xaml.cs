@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using Frituquim.ViewModels;
 using Wpf.Ui;
+using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
@@ -17,7 +18,7 @@ namespace Frituquim.Views.Windows
 
         public MainWindow(
             MainWindowViewModel viewModel,
-            IPageService pageService,
+            INavigationViewPageProvider pageProvider,
             INavigationService navigationService,
             ISnackbarService snackbarService,
             IThemeService themeService
@@ -29,7 +30,7 @@ namespace Frituquim.Views.Windows
             SystemThemeWatcher.Watch(this);
 
             InitializeComponent();
-            SetPageService(pageService);
+            SetPageService(pageProvider);
 
             navigationService.SetNavigationControl(RootNavigation);
             snackbarService.SetSnackbarPresenter(SnackbarPresenter);
@@ -42,8 +43,9 @@ namespace Frituquim.Views.Windows
         public INavigationView GetNavigation() => RootNavigation;
 
         public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
-
-        public void SetPageService(IPageService pageService) => RootNavigation.SetPageService(pageService);
+        
+        public void SetPageService(INavigationViewPageProvider navigationViewPageProvider)
+            => RootNavigation.SetPageProviderService(navigationViewPageProvider);
 
         public void ShowWindow() => Show();
 

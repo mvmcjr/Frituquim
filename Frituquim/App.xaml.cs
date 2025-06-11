@@ -8,6 +8,8 @@ using System.Windows;
 using System.Windows.Threading;
 using Frituquim.Helpers;
 using Wpf.Ui;
+using Wpf.Ui.Abstractions;
+using Wpf.Ui.DependencyInjection;
 
 namespace Frituquim
 {
@@ -26,11 +28,10 @@ namespace Frituquim
             .ConfigureAppConfiguration(c => { c.SetBasePath(Path.GetDirectoryName(AppContext.BaseDirectory)!); })
             .ConfigureServices((context, services) =>
             {
+                services.AddNavigationViewPageProvider();
+                
                 // App Host
                 services.AddHostedService<ApplicationHostService>();
-
-                // Page resolver service
-                services.AddSingleton<IPageService, PageService>();
 
                 // Theme manipulation
                 services.AddSingleton<IThemeService, ThemeService>();

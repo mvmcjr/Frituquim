@@ -1,5 +1,5 @@
 ﻿using Frituquim.ViewModels;
-using Wpf.Ui.Controls;
+using Wpf.Ui.Abstractions.Controls;
 
 namespace Frituquim.Views.Pages
 {
