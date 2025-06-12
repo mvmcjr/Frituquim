@@ -69,7 +69,7 @@ namespace Frituquim.ViewModels
                 }
 
                 var downloadedVideo = await YtdlpHelper
-                    .CreateYtdlpCommand(VideoPathOrUrl, tempFilePath, Array.Empty<string>())
+                    .CreateYtdlpCommand(VideoPathOrUrl, tempFilePath, [])
                     .ExecuteAsync()
                     .Task
                     .ContinueWith(t => t.IsCompletedSuccessfully);
@@ -86,8 +86,20 @@ namespace Frituquim.ViewModels
                 SnackbarService.Show("Video baixado com sucesso!",
                     "O video foi baixado com sucesso e a extração de frames será iniciada.", ControlAppearance.Success,
                     null, TimeSpan.FromSeconds(3));
-                await ExtractFramesToFolder(tempFilePath);
-                File.Delete(tempFilePath);
+                try
+                {
+                    await ExtractFramesToFolder(tempFilePath);
+                }
+                catch (Exception ex)
+                {
+                    SnackbarService.Show("Erro ao extrair frames!",
+                        $"Ocorreu um erro ao extrair os frames do video: {ex.Message}", ControlAppearance.Danger, null,
+                        TimeSpan.FromSeconds(3));
+                }
+                finally
+                {
+                    File.Delete(tempFilePath);   
+                }
             }
             else
             {
