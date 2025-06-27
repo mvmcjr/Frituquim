@@ -188,6 +188,13 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                 "A conversão foi cancelada pelo usuário.", ControlAppearance.Info, null,
                 TimeSpan.FromSeconds(3));
         }
+        catch (Exception ex)
+        {
+            SnackbarService.Show("Erro durante a conversão!",
+                $"Ocorreu um erro ao tentar converter os vídeos: {ex.Message}", ControlAppearance.Danger, null,
+                TimeSpan.FromSeconds(5));
+            Debug.WriteLine($"Error during conversion: {ex}");
+        }
         finally
         {
             IsExtractButtonEnabled = true;
