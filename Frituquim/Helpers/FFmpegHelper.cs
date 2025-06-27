@@ -41,7 +41,13 @@ public static class FFmpegHelper
                 _ => "libx264"
             };
             
-            args.AddRange(["-c:v", codec, "-c:a", "aac", "-b:a", "128k"]);
+            if(conversionHardware == ConversionHardware.Nvidia)
+            {
+                args.AddRange(["-preset", "medium"]);
+                args.AddRange(["-rc:v", "vbr", "-cq", "24"]);
+            }
+            
+            args.AddRange(["-c:v", codec, "-c:a", "aac", "-b:a", "128k", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]);
         }
         
         args.Add(outputPath);
