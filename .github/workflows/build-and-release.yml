@@ -35,12 +35,24 @@ jobs:
         
     - name: Download FFmpeg
       run: |
-        $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+        # Determine FFmpeg download URL based on architecture
+        if ("${{ matrix.architecture }}" -eq "x64") {
+          $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+        } else {
+          # For x86, use defisym/FFmpeg-Builds-Win32 which maintains 32-bit builds
+          $ffmpegUrl = "https://github.com/defisym/FFmpeg-Builds-Win32/releases/latest/download/ffmpeg-master-latest-win32-gpl.zip"
+        }
+        
         $tempZip = "ffmpeg-temp.zip"
         $extractPath = "ffmpeg-temp"
         
-        Write-Host "Downloading FFmpeg..."
-        Invoke-WebRequest -Uri $ffmpegUrl -OutFile $tempZip
+        Write-Host "Downloading FFmpeg for ${{ matrix.architecture }}..."
+        try {
+          Invoke-WebRequest -Uri $ffmpegUrl -OutFile $tempZip -ErrorAction Stop
+        } catch {
+          Write-Error "Failed to download FFmpeg from $ffmpegUrl : $_"
+          exit 1
+        }
         
         Write-Host "Extracting FFmpeg..."
         Expand-Archive -Path $tempZip -DestinationPath $extractPath -Force
@@ -50,20 +62,27 @@ jobs:
         $ffprobeExe = Get-ChildItem -Path $extractPath -Recurse -Name "ffprobe.exe" | Select-Object -First 1
         
         if ($ffmpegExe) {
-          $ffmpegPath = Join-Path $extractPath $ffmpegExe
-          Copy-Item $ffmpegPath "ffmpeg.exe"
-          Write-Host "Copied ffmpeg.exe"
+          $ffmpegPath = Get-ChildItem -Path $extractPath -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          Copy-Item $ffmpegPath.FullName "ffmpeg.exe"
+          Write-Host "✓ Copied ffmpeg.exe for ${{ matrix.architecture }}"
         } else {
           Write-Error "ffmpeg.exe not found in extracted files"
+          exit 1
         }
         
         if ($ffprobeExe) {
-          $ffprobePath = Join-Path $extractPath $ffprobeExe
-          Copy-Item $ffprobePath "ffprobe.exe"
-          Write-Host "Copied ffprobe.exe"
+          $ffprobePath = Get-ChildItem -Path $extractPath -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
+          Copy-Item $ffprobePath.FullName "ffprobe.exe"
+          Write-Host "✓ Copied ffprobe.exe for ${{ matrix.architecture }}"
         } else {
           Write-Error "ffprobe.exe not found in extracted files"
+          exit 1
         }
+        
+        # Verify the binaries work
+        Write-Host "Verifying FFmpeg binaries..."
+        & .\ffmpeg.exe -version 2>&1 | Select-Object -First 2
+        & .\ffprobe.exe -version 2>&1 | Select-Object -First 2
         
         # Clean up
         Remove-Item $tempZip -Force
