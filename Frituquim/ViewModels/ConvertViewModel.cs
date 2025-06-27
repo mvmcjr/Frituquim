@@ -14,12 +14,13 @@ using Frituquim.Helpers;
 using Frituquim.Models;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
+using Application = System.Windows.Application;
 
 namespace Frituquim.ViewModels;
 
 public partial class ConvertViewModel(ISnackbarService snackbarService) : FrituquimBasePageWithOutputDirectory
 {
-    public Dispatcher? Dispatcher => UiApplication.Current.MainWindow?.Dispatcher;
+    public Dispatcher Dispatcher => Application.Current.Dispatcher;
     
     private ISnackbarService SnackbarService { get; } = snackbarService;
 
@@ -121,15 +122,18 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
 
                     if (!convertedFile)
                     {
-                        SnackbarService.Show("Erro ao converter video!",
-                            "Ocorreu um erro ao converter o video, tente novamente.", ControlAppearance.Danger, null,
-                            TimeSpan.FromSeconds(3));
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            SnackbarService.Show("Erro ao converter video!",
+                                "Ocorreu um erro ao converter o video, tente novamente.", ControlAppearance.Danger, null,
+                                TimeSpan.FromSeconds(3));
+                        });
+                        
                         IsExtractButtonEnabled = true;
                     }
 
                     Interlocked.Increment(ref processedFiles);
-                    
-                    Dispatcher?.Invoke(() => CurrentProgress = (double) processedFiles / files.Length * 100);
+                    await Dispatcher.InvokeAsync(() => CurrentProgress = (double) processedFiles / files.Length * 100);
                 })
                 .ProcessInParallel(3);
 
