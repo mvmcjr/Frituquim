@@ -7,11 +7,15 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:calcBinding="clr-namespace:CalcBinding;assembly=CalcBinding"
       xmlns:helpers="clr-namespace:Frituquim.Helpers"
+      xmlns:converters="clr-namespace:Frituquim.Converters"
+      xmlns:controls="clr-namespace:Frituquim.Views.Controls"
       mc:Ignorable="d"
       d:DataContext="{d:DesignInstance local:ConvertPage, IsDesignTimeCreatable=False}"
       d:DesignHeight="300" d:DesignWidth="300">
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
     </Page.Resources>
 
     <Grid VerticalAlignment="Top" helpers:MarginSetter.Margin="0,4">
@@ -112,17 +116,66 @@
                   ItemsSource="{Binding ViewModel.ConversionHardwares}"
                   SelectedItem="{Binding ViewModel.ConversionHardware}" />
 
-        <Grid Grid.Row="5" Grid.Column="0" Margin="0, 8,0,0">
-            <ui:Button Appearance="Primary" Command="{Binding ViewModel.ConvertVideosCommand}"
-                       IsEnabled="{Binding ViewModel.IsExtractButtonEnabled}">
-                <StackPanel>
-                    <TextBlock Text="Converter Videos" Foreground="#FFFFFFFF"
+        <Grid Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Margin="0, 8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <ui:Button Grid.Column="0"
+                       Appearance="Primary"
+                       Command="{Binding ViewModel.ConvertVideosCommand}"
+                       IsEnabled="{Binding ViewModel.IsExtractButtonEnabled}"
+                       Padding="16,12"
+                       CornerRadius="8">
+                <ui:Button.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.2" BlurRadius="8" ShadowDepth="2" />
+                </ui:Button.Effect>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <ui:SymbolIcon Symbol="Play24"
+                                   FontSize="16"
+                                   Margin="0,0,8,0"
+                                   Visibility="{Binding ViewModel.IsExtractButtonEnabled, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <TextBlock Text="Converter Videos"
+                               Foreground="White"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
                                Visibility="{Binding ViewModel.IsExtractButtonEnabled, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                    <ui:ProgressRing IsIndeterminate="{calcBinding:Binding ViewModel.ShowIndeterminateProgress}"
-                                     Progress="{Binding ViewModel.CurrentProgress}" Height="20" Width="20"
+
+                    <ui:ProgressRing IsIndeterminate="{Binding ViewModel.ShowIndeterminateProgress}"
+                                     Progress="{Binding ViewModel.CurrentProgress}"
+                                     Height="20" Width="20"
                                      Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <TextBlock Text="Convertendo..."
+                               Margin="8,0,0,0"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />
                 </StackPanel>
             </ui:Button>
+
+            <ui:Button Grid.Column="1"
+                       Margin="12,0,0,0"
+                       Appearance="Danger"
+                       Command="{Binding ViewModel.CancelConversionCommand}"
+                       IsEnabled="{Binding ViewModel.IsCancelButtonEnabled}"
+                       Padding="12,12"
+                       CornerRadius="8">
+                <ui:Button.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.15" BlurRadius="6" ShadowDepth="1" />
+                </ui:Button.Effect>
+                <StackPanel Orientation="Horizontal" Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <ui:SymbolIcon Symbol="Dismiss16" FontSize="14" Margin="0,0,6,0" />
+                    <TextBlock Text="Cancelar" FontWeight="SemiBold" />
+                </StackPanel>
+            </ui:Button>
+        </Grid>
+
+        <!-- Progress Information Panel -->
+        <Grid Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2"
+              Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <controls:ConversionProgressControl
+                DataContext="{Binding ViewModel.ConversionManager}" />
         </Grid>
     </Grid>
 </Page>

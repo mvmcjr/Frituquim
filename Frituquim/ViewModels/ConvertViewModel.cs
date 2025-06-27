@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Forms.Design;
 using System.Windows.Threading;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
+using CliWrap;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EnumerableAsyncProcessor.Extensions;
@@ -23,6 +27,7 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
     public Dispatcher Dispatcher => Application.Current.Dispatcher;
     
     private ISnackbarService SnackbarService { get; } = snackbarService;
+    private CancellationTokenSource? _cancellationTokenSource;
 
     [ObservableProperty] private string? _inputDirectory;
 
@@ -44,6 +49,16 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
         ConversionHardware.Cpu
     };
 
+    [ObservableProperty] private string? _currentFile;
+    
+    [ObservableProperty] private string? _conversionSpeed;
+    
+    [ObservableProperty] private string? _estimatedTimeRemaining;
+    
+    [ObservableProperty] private bool _isCancelButtonEnabled;
+    
+    [ObservableProperty] private ConversionManager? _conversionManager;
+
     public bool ShowOutputDirectory => !SaveInSameDirectory;
     
     [RelayCommand]
@@ -57,10 +72,23 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
     }
 
     [RelayCommand]
+    private void CancelConversion()
+    {
+        _cancellationTokenSource?.Cancel();
+        IsCancelButtonEnabled = false;
+    }
+
+    [RelayCommand]
     private async Task ConvertVideos()
     {
         IsExtractButtonEnabled = false;
+        IsCancelButtonEnabled = true;
         CurrentProgress = null;
+        ConversionSpeed = null;
+        EstimatedTimeRemaining = null;
+        CurrentFile = null;
+        
+        _cancellationTokenSource = new CancellationTokenSource();
 
         try
         {
@@ -69,7 +97,6 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                 SnackbarService.Show("Diretório de entrada não selecionado!",
                     "Selecione um diretório de entrada para continuar.", ControlAppearance.Danger, null,
                     TimeSpan.FromSeconds(3));
-                IsExtractButtonEnabled = true;
                 return;
             }
 
@@ -78,7 +105,6 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                 SnackbarService.Show("Diretório de entrada não encontrado!",
                     "O diretório de entrada selecionado não foi encontrado.", ControlAppearance.Danger, null,
                     TimeSpan.FromSeconds(3));
-                IsExtractButtonEnabled = true;
                 return;
             }
 
@@ -90,66 +116,91 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                 SnackbarService.Show("Nenhum arquivo encontrado!",
                     "Nenhum arquivo foi encontrado no diretório de entrada.", ControlAppearance.Danger, null,
                     TimeSpan.FromSeconds(3));
-                IsExtractButtonEnabled = true;
                 return;
             }
             
-            int processedFiles = 0;
-
-            await files.ToAsyncProcessorBuilder()
-                .ForEachAsync(async file =>
-                {
-                    var fileName = Path.GetFileName(file);
-
-                    var outputDirectory = SaveInSameDirectory
-                        ? Path.GetDirectoryName(file) ?? OutputDirectory
-                        : OutputDirectory;
-
-                    var outputFilePath =
-                        Path.Combine(outputDirectory, Path.ChangeExtension(fileName, ".mp4"));
-
-                    if (File.Exists(outputFilePath))
-                    {
-                        File.Delete(outputFilePath);
-                    }
-
-                    var ffmpegCommand =
-                        FFmpegHelper.ConvertFile(file, outputFilePath, ConversionType, ConversionHardware);
-                    var convertedFile = await ffmpegCommand
-                        .ExecuteAsync()
-                        .Task
-                        .ContinueWith(t => t.IsCompletedSuccessfully);
-
-                    if (!convertedFile)
-                    {
-                        await Dispatcher.InvokeAsync(() =>
-                        {
-                            SnackbarService.Show("Erro ao converter video!",
-                                "Ocorreu um erro ao converter o video, tente novamente.", ControlAppearance.Danger, null,
-                                TimeSpan.FromSeconds(3));
-                        });
-                        
-                        IsExtractButtonEnabled = true;
-                    }
-
-                    Interlocked.Increment(ref processedFiles);
-                    await Dispatcher.InvokeAsync(() => CurrentProgress = (double) processedFiles / files.Length * 100);
-                })
-                .ProcessInParallel(3);
-
-            SnackbarService.Show("Conversão concluída!",
-                "Todos os vídeos foram convertidos com sucesso.", ControlAppearance.Success, null,
-                TimeSpan.FromSeconds(3));
-
-            if (OpenFolderAfterExecution)
+            // Create and configure conversion manager
+            ConversionManager = new ConversionManager(Dispatcher);
+            
+            // Bind manager properties to ViewModel properties
+            ConversionManager.PropertyChanged += (s, e) =>
             {
-                var directory = SaveInSameDirectory ? InputDirectory : OutputDirectory;
-                System.Diagnostics.Process.Start("explorer.exe", directory);
+                switch (e.PropertyName)
+                {
+                    case nameof(ConversionManager.CurrentStatus):
+                        CurrentFile = ConversionManager?.CurrentStatus;
+                        break;
+                    case nameof(ConversionManager.AverageSpeed):
+                        ConversionSpeed = ConversionManager?.AverageSpeed;
+                        break;
+                    case nameof(ConversionManager.EstimatedTimeRemaining):
+                        EstimatedTimeRemaining = ConversionManager?.EstimatedTimeRemaining;
+                        break;
+                    case nameof(ConversionManager.OverallProgress):
+                        CurrentProgress = ConversionManager?.OverallProgress;
+                        break;
+                }
+            };
+            
+            // Start conversions
+            await ConversionManager.StartConversions(
+                files,
+                OutputDirectory,
+                SaveInSameDirectory,
+                ConversionType,
+                ConversionHardware,
+                _cancellationTokenSource.Token,
+                3);
+
+            if (!_cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                var failedConversions = ConversionManager.CompletedConversions
+                    .Where(c => c.Status == ConversionStatus.Failed)
+                    .ToList();
+
+                if (failedConversions.Any())
+                {
+                    SnackbarService.Show("Conversão concluída com erros!",
+                        $"{failedConversions.Count} arquivo(s) falharam na conversão.", ControlAppearance.Caution, null,
+                        TimeSpan.FromSeconds(5));
+                }
+                else
+                {
+                    SnackbarService.Show("Conversão concluída!",
+                        "Todos os vídeos foram convertidos com sucesso.", ControlAppearance.Success, null,
+                        TimeSpan.FromSeconds(3));
+                }
+
+                if (OpenFolderAfterExecution)
+                {
+                    var directory = SaveInSameDirectory ? InputDirectory : OutputDirectory;
+                    System.Diagnostics.Process.Start("explorer.exe", directory);
+                }
             }
+            else
+            {
+                SnackbarService.Show("Conversão cancelada!",
+                    "A conversão foi cancelada pelo usuário.", ControlAppearance.Info, null,
+                    TimeSpan.FromSeconds(3));
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            SnackbarService.Show("Conversão cancelada!",
+                "A conversão foi cancelada pelo usuário.", ControlAppearance.Info, null,
+                TimeSpan.FromSeconds(3));
         }
         finally
         {
             IsExtractButtonEnabled = true;
+            IsCancelButtonEnabled = false;
+            CurrentFile = null;
+            ConversionSpeed = null;
+            EstimatedTimeRemaining = null;
+            ConversionManager?.Reset();
+            ConversionManager = null;
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
         }
     }
 }

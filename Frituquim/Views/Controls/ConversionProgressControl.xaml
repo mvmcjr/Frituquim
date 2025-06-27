@@ -1,0 +1,247 @@
+<UserControl x:Class="Frituquim.Views.Controls.ConversionProgressControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:models="clr-namespace:Frituquim.Models"
+             xmlns:converters="clr-namespace:Frituquim.Converters"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
+             mc:Ignorable="d"
+             d:DesignHeight="400" d:DesignWidth="600"
+             d:DataContext="{d:DesignInstance models:ConversionManager}">
+    <UserControl.Resources>
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
+
+        <Storyboard x:Key="FadeInAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.5">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+    </UserControl.Resources>
+
+    <ui:CardControl Margin="0,16,0,0" Padding="24">
+        <ui:CardControl.Header>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowSync24" FontSize="20" Margin="0,0,12,0" />
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="Subtitle" Text="Conversão em Andamento" />
+                            <ui:TextBlock
+                                Appearance="Secondary"
+                                Text="{Binding CurrentStatus}"
+                                Visibility="{Binding CurrentStatus, Converter={StaticResource NullToVisibilityConverter}}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <ui:InfoBadge Grid.Column="1"
+                                  Value="{Binding TotalFiles}"
+                                  Severity="Success" />
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="0,16,0,24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <ui:TextBlock Grid.Column="0"
+                                          FontTypography="Body"
+                                          Text="Progresso Total" />
+                            <ui:TextBlock Grid.Column="1"
+                                          FontTypography="BodyStrong"
+                                          Text="{Binding OverallProgress, StringFormat='{}{0:F1}%'}" />
+                        </Grid>
+
+                        <ProgressBar Value="{Binding OverallProgress}"
+                                     Maximum="100"
+                                     Height="8" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1">
+                        <ui:TextBlock FontTypography="Caption"
+                                      Text="Concluídos"
+                                      HorizontalAlignment="Center"
+                                      Appearance="Secondary" />
+                        <ui:TextBlock FontTypography="TitleLarge"
+                                      Text="{Binding CompletedConversions.Count}"
+                                      HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="2" Margin="0,0,0,24"
+                      Visibility="{Binding AverageSpeed, Converter={StaticResource NullToVisibilityConverter}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <ui:CardControl Grid.Column="0" Margin="0,0,8,0" Padding="16,12">
+                        <ui:CardControl.Icon>
+                            <ui:SymbolIcon Symbol="Gauge24" />
+                        </ui:CardControl.Icon>
+                        <ui:CardControl.Header>
+                            <StackPanel>
+                                <ui:TextBlock FontTypography="Caption"
+                                              Text="Velocidade Média"
+                                              Appearance="Secondary" />
+                                <ui:TextBlock FontTypography="BodyStrong"
+                                              Text="{Binding AverageSpeed}" />
+                            </StackPanel>
+                        </ui:CardControl.Header>
+                    </ui:CardControl>
+
+                    <ui:CardControl Grid.Column="1"
+                                    Margin="8,0,0,0"
+                                    Padding="16,12"
+                                    Visibility="{Binding EstimatedTimeRemaining, Converter={StaticResource NullToVisibilityConverter}}">
+                        <ui:CardControl.Icon>
+                            <ui:SymbolIcon Symbol="Clock24" />
+                        </ui:CardControl.Icon>
+                        <ui:CardControl.Header>
+                            <StackPanel>
+                                <ui:TextBlock FontTypography="Caption"
+                                              Text="Tempo Restante"
+                                              Appearance="Secondary" />
+                                <ui:TextBlock FontTypography="BodyStrong"
+                                              Text="{Binding EstimatedTimeRemaining}" />
+                            </StackPanel>
+                        </ui:CardControl.Header>
+                    </ui:CardControl>
+                </Grid>
+
+                <ui:CardControl Grid.Row="3" Margin="0,8,0,0"
+                                Visibility="{Binding ActiveConversions.Count, Converter={StaticResource CountToVisibilityConverter}}">
+                    <ui:CardControl.Icon>
+                        <ui:SymbolIcon Symbol="PlayCircle24" />
+                    </ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="BodyStrong" Text="Conversões Ativas" />
+                            <ui:TextBlock
+                                Appearance="Secondary"
+                                Text="{Binding ActiveConversions.Count, StringFormat='{}{0} arquivo(s) em processamento'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+
+                    <ItemsControl ItemsSource="{Binding ActiveConversions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,4"
+                                        Padding="12,8"
+                                        CornerRadius="6"
+                                        Background="{DynamicResource SubtleFillColorTransparentBrush}"
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <Grid Grid.Row="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                <ui:SymbolIcon Symbol="DocumentArrowRight24"
+                                                               FontSize="16"
+                                                               Margin="0,0,8,0" />
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <ui:TextBlock Text="{Binding FileName}"
+                                                                  FontTypography="Body"
+                                                                  TextTrimming="CharacterEllipsis"
+                                                                  MaxWidth="250" />
+                                                    <ui:TextBlock Text="{Binding Status}"
+                                                                  FontTypography="Caption"
+                                                                  Appearance="Secondary" />
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <ui:InfoBadge Grid.Column="1"
+                                                          Margin="8,0"
+                                                          Value="{Binding Speed, StringFormat='{}{0:F1}x'}"
+                                                          VerticalAlignment="Center"
+                                                          Visibility="{Binding Speed, Converter={StaticResource NullToVisibilityConverter}}" />
+
+                                            <StackPanel Grid.Column="2"
+                                                        Orientation="Horizontal"
+                                                        Visibility="{Binding EstimatedTimeRemaining, Converter={StaticResource NullToVisibilityConverter}}">
+                                                <ui:SymbolIcon Symbol="Clock24"
+                                                               FontSize="12"
+                                                               Margin="0,0,4,0"
+                                                               VerticalAlignment="Center" />
+                                                <ui:TextBlock
+                                                    Text="{Binding EstimatedTimeRemaining, StringFormat='ETA: mm\\:ss'}"
+                                                    FontTypography="Caption"
+                                                    VerticalAlignment="Center"
+                                                    Appearance="Secondary" />
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <Grid Grid.Row="1"
+                                              Margin="0,8,0,0"
+                                              Visibility="{Binding Duration, Converter={StaticResource NullToVisibilityConverter}}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                                <Grid Margin="0,0,0,4">
+                                                    <ui:TextBlock FontTypography="Caption"
+                                                                  Text="{Binding CurrentTime, StringFormat='mm\\:ss'}"
+                                                                  Appearance="Secondary" />
+                                                    <ui:TextBlock FontTypography="Caption"
+                                                                  Text="{Binding Duration, StringFormat='mm\\:ss'}"
+                                                                  HorizontalAlignment="Right"
+                                                                  Appearance="Secondary" />
+                                                </Grid>
+                                                <ProgressBar Height="4"
+                                                             Maximum="1"
+                                                             Value="{Binding Progress}" />
+                                            </StackPanel>
+                                            <ui:TextBlock Grid.Column="1"
+                                                          FontTypography="Caption"
+                                                          VerticalAlignment="Center"
+                                                          Text="{Binding Progress, StringFormat='{}{0:P2}'}"
+                                                          Appearance="Secondary">
+                                            </ui:TextBlock>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ui:CardControl>
+            </Grid>
+        </ui:CardControl.Header>
+    </ui:CardControl>
+</UserControl>
