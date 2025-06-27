@@ -5,6 +5,9 @@ namespace Frituquim.ViewModels;
 
 public partial class FrituquimBasePage : ObservableObject
 {
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ShowIndeterminateProgress))]
+    private double? _currentProgress;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLoadingVisibility))]
     [NotifyPropertyChangedFor(nameof(IsLoading))]
@@ -13,9 +16,6 @@ public partial class FrituquimBasePage : ObservableObject
     public bool IsLoading => !IsExtractButtonEnabled;
 
     public Visibility IsLoadingVisibility => IsExtractButtonEnabled ? Visibility.Collapsed : Visibility.Visible;
-    
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ShowIndeterminateProgress))]
-    private double? _currentProgress;
-    
+
     public bool ShowIndeterminateProgress => !CurrentProgress.HasValue;
 }

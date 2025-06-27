@@ -6,7 +6,6 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:models="clr-namespace:Frituquim.Models"
              xmlns:converters="clr-namespace:Frituquim.Converters"
-             xmlns:system="clr-namespace:System;assembly=System.Runtime"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600"
              d:DataContext="{d:DesignInstance models:ConversionManager}">
@@ -14,14 +13,6 @@
         <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
 
-        <Storyboard x:Key="FadeInAnimation">
-            <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                             From="0" To="1" Duration="0:0:0.5">
-                <DoubleAnimation.EasingFunction>
-                    <QuadraticEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
     </UserControl.Resources>
 
     <ui:CardControl Margin="0,16,0,0" Padding="24">
@@ -232,8 +223,7 @@
                                                           FontTypography="Caption"
                                                           VerticalAlignment="Center"
                                                           Text="{Binding Progress, StringFormat='{}{0:P2}'}"
-                                                          Appearance="Secondary">
-                                            </ui:TextBlock>
+                                                          Appearance="Secondary" />
                                         </Grid>
                                     </Grid>
                                 </Border>

@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using CliWrap;
 using CliWrap.Buffered;
@@ -21,28 +19,22 @@ public static class FFmpegHelper
     {
         var ffmpegPath = Path.Combine(AppContext.BaseDirectory, "ffmpeg.exe");
 
-        if (File.Exists(ffmpegPath))
-        {
-            return ffmpegPath;
-        }
+        if (File.Exists(ffmpegPath)) return ffmpegPath;
 
         return Environment.GetEnvironmentVariable("FFMPEG_PATH") ?? "ffmpeg";
     }
-    
+
     private static string FindFfprobe()
     {
         var ffprobePath = Path.Combine(AppContext.BaseDirectory, "ffprobe.exe");
 
-        if (File.Exists(ffprobePath))
-        {
-            return ffprobePath;
-        }
+        if (File.Exists(ffprobePath)) return ffprobePath;
 
         return Environment.GetEnvironmentVariable("FFPROBE_PATH") ?? "ffprobe";
     }
-    
+
     /// <summary>
-    /// Gets the duration of a video file using ffprobe
+    ///     Gets the duration of a video file using ffprobe
     /// </summary>
     public static async Task<TimeSpan?> GetVideoDurationAsync(string inputPath)
     {
@@ -60,10 +52,8 @@ public static class FFmpegHelper
             if (result.ExitCode == 0 && !string.IsNullOrWhiteSpace(result.StandardOutput))
             {
                 var durationText = result.StandardOutput.Trim();
-                if (double.TryParse(durationText, NumberStyles.Float, CultureInfo.InvariantCulture, out var durationSeconds))
-                {
-                    return TimeSpan.FromSeconds(durationSeconds);
-                }
+                if (double.TryParse(durationText, NumberStyles.Float, CultureInfo.InvariantCulture,
+                        out var durationSeconds)) return TimeSpan.FromSeconds(durationSeconds);
             }
         }
         catch (Exception ex)
@@ -73,8 +63,9 @@ public static class FFmpegHelper
 
         return null;
     }
-    
-    public static Command ConvertFile(string inputPath, string outputPath, ConversionType conversionType, ConversionHardware conversionHardware, Action<string>? onProgress = null)
+
+    public static Command ConvertFile(string inputPath, string outputPath, ConversionType conversionType,
+        ConversionHardware conversionHardware, Action<string>? onProgress = null)
     {
         var args = new List<string>
         {
@@ -89,16 +80,18 @@ public static class FFmpegHelper
                 ConversionHardware.IntelQuickSync => "h264_qsv",
                 _ => "libx264"
             };
-            
-            if(conversionHardware == ConversionHardware.Nvidia)
+
+            if (conversionHardware == ConversionHardware.Nvidia)
             {
                 args.AddRange(["-preset", "medium"]);
                 args.AddRange(["-rc:v", "vbr", "-cq", "24"]);
             }
-            
-            args.AddRange(["-c:v", codec, "-c:a", "aac", "-b:a", "128k", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]);
+
+            args.AddRange([
+                "-c:v", codec, "-c:a", "aac", "-b:a", "128k", "-pix_fmt", "yuv420p", "-movflags", "+faststart"
+            ]);
         }
-        
+
         args.Add(outputPath);
 
         return Cli.Wrap(ExePath)
@@ -108,10 +101,7 @@ public static class FFmpegHelper
             {
                 Debug.WriteLine(l);
 
-                if (onProgress != null)
-                {
-                    onProgress(l);
-                }
+                if (onProgress != null) onProgress(l);
             }));
     }
 }

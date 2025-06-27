@@ -1,24 +1,20 @@
 ﻿using Frituquim.ViewModels;
 using Wpf.Ui.Abstractions.Controls;
 
-namespace Frituquim.Views.Pages
+namespace Frituquim.Views.Pages;
+
+/// <summary>
+///     Interaction logic for DashboardPage.xaml
+/// </summary>
+public partial class FramesExtractionPage : INavigableView<FramesExtractionViewModel>
 {
-    /// <summary>
-    /// Interaction logic for DashboardPage.xaml
-    /// </summary>
-    public partial class FramesExtractionPage : INavigableView<FramesExtractionViewModel>
+    public FramesExtractionPage(FramesExtractionViewModel viewModel)
     {
-        public FramesExtractionViewModel ViewModel
-        {
-            get;
-        }
+        ViewModel = viewModel;
+        DataContext = this;
 
-        public FramesExtractionPage(FramesExtractionViewModel viewModel)
-        {
-            ViewModel = viewModel;
-            DataContext = this;
-
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
+
+    public FramesExtractionViewModel ViewModel { get; }
 }

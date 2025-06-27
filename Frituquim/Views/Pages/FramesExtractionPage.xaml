@@ -28,7 +28,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        
+
         <Grid Grid.Row="2" helpers:MarginSetter.Margin="8,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -67,7 +67,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            
+
             <ui:TextBox PlaceholderText="Diretório de saída" Text="{Binding ViewModel.OutputDirectory}" />
             <ui:Button Margin="4,0,0,0" Grid.Row="0" Grid.Column="1"
                        Command="{Binding ViewModel.OpenOutputDirectoryDialogCommand}"
@@ -79,7 +79,7 @@
             <ui:TextBox Margin="0, 8, 0, 0" Grid.Row="1" Grid.Column="0"
                         PlaceholderText="URL do youtube ou caminho do arquivo"
                         Text="{Binding ViewModel.VideoPathOrUrl}" />
-            
+
             <ui:Button Margin="4, 8,0,0" Grid.Row="1" Grid.Column="1"
                        Command="{Binding ViewModel.OpenFileDialogCommand}"
                        Content="Selecionar arquivo"

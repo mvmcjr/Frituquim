@@ -1,20 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Forms;
-using System.Windows.Forms.Design;
 using System.Windows.Threading;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
-using CliWrap;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using EnumerableAsyncProcessor.Extensions;
-using Frituquim.Helpers;
 using Frituquim.Models;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
@@ -24,51 +18,60 @@ namespace Frituquim.ViewModels;
 
 public partial class ConvertViewModel(ISnackbarService snackbarService) : FrituquimBasePageWithOutputDirectory
 {
-    public Dispatcher Dispatcher => Application.Current.Dispatcher;
-    
-    private ISnackbarService SnackbarService { get; } = snackbarService;
     private CancellationTokenSource? _cancellationTokenSource;
 
-    [ObservableProperty] private string? _inputDirectory;
+    [ObservableProperty]
+    private ConversionHardware _conversionHardware = ConversionHardware.Cpu;
 
-    [ObservableProperty] private string _inputFilter = "*.MOV";
-
-    [ObservableProperty] private bool _inputIncludeSubDirectories = true;
-
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ShowOutputDirectory))]
-    private bool _saveInSameDirectory = true;
-
-    [ObservableProperty] private ConversionType _conversionType = ConversionType.Mp4;
-
-    [ObservableProperty] private ConversionHardware _conversionHardware = ConversionHardware.Cpu;
-
-    [ObservableProperty] private ICollection<ConversionHardware> _conversionHardwares = new List<ConversionHardware>
+    [ObservableProperty]
+    private ICollection<ConversionHardware> _conversionHardwares = new List<ConversionHardware>
     {
         ConversionHardware.Nvidia,
         ConversionHardware.IntelQuickSync,
         ConversionHardware.Cpu
     };
 
-    [ObservableProperty] private string? _currentFile;
-    
-    [ObservableProperty] private string? _conversionSpeed;
-    
-    [ObservableProperty] private string? _estimatedTimeRemaining;
-    
-    [ObservableProperty] private bool _isCancelButtonEnabled;
-    
-    [ObservableProperty] private ConversionManager? _conversionManager;
+    [ObservableProperty]
+    private ConversionManager? _conversionManager;
+
+    [ObservableProperty]
+    private string? _conversionSpeed;
+
+    [ObservableProperty]
+    private ConversionType _conversionType = ConversionType.Mp4;
+
+    [ObservableProperty]
+    private string? _currentFile;
+
+    [ObservableProperty]
+    private string? _estimatedTimeRemaining;
+
+    [ObservableProperty]
+    private string? _inputDirectory;
+
+    [ObservableProperty]
+    private string _inputFilter = "*.MOV";
+
+    [ObservableProperty]
+    private bool _inputIncludeSubDirectories = true;
+
+    [ObservableProperty]
+    private bool _isCancelButtonEnabled;
+
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ShowOutputDirectory))]
+    private bool _saveInSameDirectory = true;
+
+    public Dispatcher Dispatcher => Application.Current.Dispatcher;
+
+    private ISnackbarService SnackbarService { get; } = snackbarService;
 
     public bool ShowOutputDirectory => !SaveInSameDirectory;
-    
+
     [RelayCommand]
     private void OpenInputDirectoryDialog()
     {
         var fileDialog = new FolderBrowserDialog();
-        if (fileDialog.ShowDialog() == DialogResult.OK)
-        {
-            InputDirectory = fileDialog.SelectedPath;
-        }
+        if (fileDialog.ShowDialog() == DialogResult.OK) InputDirectory = fileDialog.SelectedPath;
     }
 
     [RelayCommand]
@@ -87,7 +90,7 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
         ConversionSpeed = null;
         EstimatedTimeRemaining = null;
         CurrentFile = null;
-        
+
         _cancellationTokenSource = new CancellationTokenSource();
 
         try
@@ -118,10 +121,10 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                     TimeSpan.FromSeconds(3));
                 return;
             }
-            
+
             // Create and configure conversion manager
             ConversionManager = new ConversionManager(Dispatcher);
-            
+
             // Bind manager properties to ViewModel properties
             ConversionManager.PropertyChanged += (s, e) =>
             {
@@ -141,7 +144,7 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                         break;
                 }
             };
-            
+
             // Start conversions
             await ConversionManager.StartConversions(
                 files,
@@ -149,8 +152,7 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                 SaveInSameDirectory,
                 ConversionType,
                 ConversionHardware,
-                _cancellationTokenSource.Token,
-                3);
+                _cancellationTokenSource.Token);
 
             if (!_cancellationTokenSource.Token.IsCancellationRequested)
             {
@@ -159,22 +161,18 @@ public partial class ConvertViewModel(ISnackbarService snackbarService) : Frituq
                     .ToList();
 
                 if (failedConversions.Any())
-                {
                     SnackbarService.Show("Conversão concluída com erros!",
                         $"{failedConversions.Count} arquivo(s) falharam na conversão.", ControlAppearance.Caution, null,
                         TimeSpan.FromSeconds(5));
-                }
                 else
-                {
                     SnackbarService.Show("Conversão concluída!",
                         "Todos os vídeos foram convertidos com sucesso.", ControlAppearance.Success, null,
                         TimeSpan.FromSeconds(3));
-                }
 
                 if (OpenFolderAfterExecution)
                 {
                     var directory = SaveInSameDirectory ? InputDirectory : OutputDirectory;
-                    System.Diagnostics.Process.Start("explorer.exe", directory);
+                    Process.Start("explorer.exe", directory);
                 }
             }
             else

@@ -22,8 +22,8 @@
         </Grid.RowDefinitions>
 
         <CheckBox Grid.Row="0" Content="Abrir pasta depois de extrair"
-          VerticalAlignment="Bottom"
-          IsChecked="{Binding ViewModel.OpenFolderAfterExecution}" />
+                  VerticalAlignment="Bottom"
+                  IsChecked="{Binding ViewModel.OpenFolderAfterExecution}" />
 
         <Grid Grid.Row="1" Margin="0, 1, 0, 0">
             <Grid.ColumnDefinitions>
@@ -37,33 +37,33 @@
 
             <ui:TextBox PlaceholderText="Diretório de saída" Text="{Binding ViewModel.OutputDirectory}" />
             <ui:Button Margin="4,0,0,0" Grid.Row="0" Grid.Column="1"
-                   Command="{Binding ViewModel.OpenOutputDirectoryDialogCommand}"
-                   Content="Selecionar diretório"
-                   Icon="Folder16"
-                   VerticalAlignment="Stretch"
-                   HorizontalAlignment="Stretch" />
+                       Command="{Binding ViewModel.OpenOutputDirectoryDialogCommand}"
+                       Content="Selecionar diretório"
+                       Icon="Folder16"
+                       VerticalAlignment="Stretch"
+                       HorizontalAlignment="Stretch" />
 
             <ui:TextBox Margin="0, 8, 0, 0" Grid.Row="1" Grid.Column="0"
-                    PlaceholderText="URL do youtube ou caminho do arquivo"
-                    Text="{Binding ViewModel.VideoPathOrUrl}" />
+                        PlaceholderText="URL do youtube ou caminho do arquivo"
+                        Text="{Binding ViewModel.VideoPathOrUrl}" />
 
             <ui:Button Margin="4, 8,0,0" Grid.Row="1" Grid.Column="1"
-                   Command="{Binding ViewModel.OpenFileDialogCommand}"
-                   Content="Selecionar arquivo"
-                   Icon="MoviesAndTv16"
-                   VerticalAlignment="Stretch"
-                   HorizontalAlignment="Stretch" />
+                       Command="{Binding ViewModel.OpenFileDialogCommand}"
+                       Content="Selecionar arquivo"
+                       Icon="MoviesAndTv16"
+                       VerticalAlignment="Stretch"
+                       HorizontalAlignment="Stretch" />
         </Grid>
 
 
         <ui:Button Grid.Row="2" Appearance="Primary" Command="{Binding ViewModel.ExecuteCommand}"
-          IsEnabled="{Binding ViewModel.IsExtractButtonEnabled}">
+                   IsEnabled="{Binding ViewModel.IsExtractButtonEnabled}">
             <StackPanel>
                 <TextBlock Text="Baixar Audio" Foreground="#FFFFFFFF"
-                  Visibility="{Binding ViewModel.IsExtractButtonEnabled, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                           Visibility="{Binding ViewModel.IsExtractButtonEnabled, Converter={StaticResource BooleanToVisibilityConverter}}" />
                 <ui:ProgressRing IsIndeterminate="{calcBinding:Binding ViewModel.ShowIndeterminateProgress}"
-                        Progress="{Binding ViewModel.CurrentProgress}" Height="20" Width="20"
-                        Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                 Progress="{Binding ViewModel.CurrentProgress}" Height="20" Width="20"
+                                 Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />
             </StackPanel>
         </ui:Button>
     </Grid>

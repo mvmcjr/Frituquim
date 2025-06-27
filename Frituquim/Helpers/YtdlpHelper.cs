@@ -18,10 +18,7 @@ public static class YtdlpHelper
     {
         var ytdlpPath = Path.Combine(AppContext.BaseDirectory, "yt-dlp.exe");
 
-        if (File.Exists(ytdlpPath))
-        {
-            return ytdlpPath;
-        }
+        if (File.Exists(ytdlpPath)) return ytdlpPath;
 
         return Environment.GetEnvironmentVariable("YTDLP_PATH") ?? "yt-dlp";
     }
@@ -44,19 +41,21 @@ public static class YtdlpHelper
         var fileName = commandResult.StandardOutput.Trim();
 
         if (selectedExtractionType == ExtractionType.Audio)
-        {
             fileName = $"{Path.GetFileNameWithoutExtension(fileName)}.mp3";
-        }
 
         return fileName;
     }
 
-    public static Command CreateYtdlpCommand(string url, string filePath, IEnumerable<string> extraArguments) =>
-        CreateBaseCommand()
+    public static Command CreateYtdlpCommand(string url, string filePath, IEnumerable<string> extraArguments)
+    {
+        return CreateBaseCommand()
             .WithArguments(new[] { url, "--no-mtime", "-o", filePath }.Concat(extraArguments), true);
+    }
 
-    private static Command CreateBaseCommand() =>
-        Cli.Wrap(ExePath)
+    private static Command CreateBaseCommand()
+    {
+        return Cli.Wrap(ExePath)
             .WithStandardOutputPipe(PipeTarget.ToDelegate(c => Debug.WriteLine(c)))
             .WithStandardErrorPipe(PipeTarget.ToDelegate(c => Debug.WriteLine(c)));
+    }
 }
