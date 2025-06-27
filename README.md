@@ -36,22 +36,23 @@
 ### Pré-requisitos
 - **Windows 10/11** (64-bit)
 - **.NET 8 Runtime** ou superior
-- **FFmpeg** instalado no sistema
 
 ### Download
 1. Acesse a página de [Releases](../../releases)
-2. Baixe a versão mais recente
-3. Execute o instalador ou extraia o arquivo ZIP
+2. Baixe a versão mais recente (x64 ou x86)
+3. Extraia o arquivo ZIP
 4. Execute `Frituquim.exe`
 
-### Instalação do FFmpeg
-O Frituquim requer o FFmpeg para funcionar. Você pode:
+**✅ FFmpeg já incluído!** - Não é necessário instalar separadamente.
 
-1. **Instalação automática**: O aplicativo tentará localizar o FFmpeg automaticamente
-2. **Instalação manual**: 
-   - Baixe o FFmpeg de [ffmpeg.org](https://ffmpeg.org/download.html)
-   - Adicione o executável ao PATH do sistema
-   - Ou coloque `ffmpeg.exe` na pasta do Frituquim
+### Estrutura dos Arquivos
+```
+Frituquim/
+├── Frituquim.exe     # Aplicativo principal
+├── ffmpeg.exe        # Conversor de vídeo
+├── ffprobe.exe       # Analisador de mídia
+└── yt-dlp.exe        # Downloader de vídeos
+```
 
 ## ⚙️ Tecnologias
 

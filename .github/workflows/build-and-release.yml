@@ -33,6 +33,42 @@ jobs:
         Invoke-WebRequest -Uri $ytdlpUrl -OutFile $outputPath
         Write-Host "Downloaded yt-dlp.exe"
         
+    - name: Download FFmpeg
+      run: |
+        $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+        $tempZip = "ffmpeg-temp.zip"
+        $extractPath = "ffmpeg-temp"
+        
+        Write-Host "Downloading FFmpeg..."
+        Invoke-WebRequest -Uri $ffmpegUrl -OutFile $tempZip
+        
+        Write-Host "Extracting FFmpeg..."
+        Expand-Archive -Path $tempZip -DestinationPath $extractPath -Force
+        
+        # Find the ffmpeg.exe and ffprobe.exe in the extracted folder
+        $ffmpegExe = Get-ChildItem -Path $extractPath -Recurse -Name "ffmpeg.exe" | Select-Object -First 1
+        $ffprobeExe = Get-ChildItem -Path $extractPath -Recurse -Name "ffprobe.exe" | Select-Object -First 1
+        
+        if ($ffmpegExe) {
+          $ffmpegPath = Join-Path $extractPath $ffmpegExe
+          Copy-Item $ffmpegPath "ffmpeg.exe"
+          Write-Host "Copied ffmpeg.exe"
+        } else {
+          Write-Error "ffmpeg.exe not found in extracted files"
+        }
+        
+        if ($ffprobeExe) {
+          $ffprobePath = Join-Path $extractPath $ffprobeExe
+          Copy-Item $ffprobePath "ffprobe.exe"
+          Write-Host "Copied ffprobe.exe"
+        } else {
+          Write-Error "ffprobe.exe not found in extracted files"
+        }
+        
+        # Clean up
+        Remove-Item $tempZip -Force
+        Remove-Item $extractPath -Recurse -Force
+        
     - name: Publish ${{ matrix.architecture }}
       run: |
         dotnet publish Frituquim/Frituquim.csproj `
@@ -45,9 +81,12 @@ jobs:
           --property:PublishTrimmed=false `
           --verbosity normal
           
-    - name: Copy yt-dlp to publish directory
+    - name: Copy external binaries to publish directory
       run: |
         Copy-Item "yt-dlp.exe" "publish-${{ matrix.architecture }}/yt-dlp.exe"
+        Copy-Item "ffmpeg.exe" "publish-${{ matrix.architecture }}/ffmpeg.exe"
+        Copy-Item "ffprobe.exe" "publish-${{ matrix.architecture }}/ffprobe.exe"
+        Write-Host "Copied yt-dlp.exe, ffmpeg.exe, and ffprobe.exe to publish directory"
         
     - name: Create release package
       run: |
@@ -67,8 +106,43 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
     - name: Download all artifacts
       uses: actions/download-artifact@v4
+      
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Get the previous tag
+        PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "^${{ github.ref_name }}$" | head -n1)
+        
+        if [ -z "$PREVIOUS_TAG" ]; then
+          echo "No previous tag found, using all commits"
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges)
+        else
+          echo "Generating changelog from $PREVIOUS_TAG to ${{ github.ref_name }}"
+          CHANGELOG=$(git log ${PREVIOUS_TAG}..${{ github.ref_name }} --pretty=format:"- %s (%h)" --no-merges)
+        fi
+        
+        # Create changelog content
+        echo "## Changes in ${{ github.ref_name }}" > changelog.md
+        echo "" >> changelog.md
+        if [ -z "$CHANGELOG" ]; then
+          echo "- No changes found" >> changelog.md
+        else
+          echo "$CHANGELOG" >> changelog.md
+        fi
+        echo "" >> changelog.md
+        echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${{ github.ref_name }}" >> changelog.md
+        
+        # Set output for use in release
+        echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
+        cat changelog.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
       
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
@@ -78,6 +152,6 @@ jobs:
           Frituquim-x64/Frituquim-x64.zip
         draft: false
         prerelease: false
-        generate_release_notes: true
+        body: ${{ steps.changelog.outputs.changelog_content }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
