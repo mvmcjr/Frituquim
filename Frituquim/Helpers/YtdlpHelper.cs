@@ -36,7 +36,7 @@ public static class YtdlpHelper
     public static async Task<string> GetFileName(string url, ExtractionType selectedExtractionType)
     {
         var commandResult = await CreateBaseCommand()
-            .WithArguments(new[] { url, "--get-filename" })
+            .WithArguments([url, "--get-filename"])
             .ExecuteBufferedAsync();
         var fileName = commandResult.StandardOutput.Trim();
 

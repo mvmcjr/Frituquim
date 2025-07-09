@@ -34,7 +34,7 @@ public partial class ExtractionViewModel(
 
         try
         {
-            var fileName = await YtdlpHelper.GetFileName(VideoPathOrUrl, ExtractionType.Audio);
+            var fileName = await YtdlpHelper.GetFileName(VideoPathOrUrl, extractionType);
             var downloadFilePath = Path.Combine(OutputDirectory, fileName);
 
             if (File.Exists(downloadFilePath)) File.Delete(downloadFilePath);
