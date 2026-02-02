@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -27,6 +28,21 @@ public partial class ExtractionViewModel(
         if (fileDialog.ShowDialog() ?? false) VideoPathOrUrl = fileDialog.FileName;
     }
 
+    [ObservableProperty]
+    private bool _isPlaylistUrl;
+
+    [ObservableProperty]
+    private bool _shouldDownloadPlaylist;
+
+    partial void OnVideoPathOrUrlChanged(string value)
+    {
+        IsPlaylistUrl = !string.IsNullOrWhiteSpace(value) && (value.Contains("list=") || value.Contains("&list="));
+        if (!IsPlaylistUrl)
+        {
+            ShouldDownloadPlaylist = false;
+        }
+    }
+
     [RelayCommand]
     private async Task Execute()
     {
@@ -34,22 +50,44 @@ public partial class ExtractionViewModel(
 
         try
         {
-            var fileName = await YtdlpHelper.GetFileName(VideoPathOrUrl, extractionType);
-            var downloadFilePath = Path.Combine(OutputDirectory, fileName);
+            bool success;
+            if (ShouldDownloadPlaylist)
+            {
+                var outputTemplate = Path.Combine(OutputDirectory, "%(title)s.%(ext)s");
+                var args = new List<string> { "--yes-playlist" };
+                if (extractionType == ExtractionType.Audio)
+                {
+                    args.AddRange(["-x", "--audio-format", "mp3"]);
+                }
 
-            if (File.Exists(downloadFilePath)) File.Delete(downloadFilePath);
+                success = await YtdlpHelper.CreateYtdlpCommand(VideoPathOrUrl, outputTemplate, args)
+                    .ExecuteAsync()
+                    .Task
+                    .ContinueWith(t => t.IsCompletedSuccessfully);
+            }
+            else
+            {
+                var fileName = await YtdlpHelper.GetFileName(VideoPathOrUrl, extractionType, false);
+                var downloadFilePath = Path.Combine(OutputDirectory, fileName);
 
-            var downloadedFile = await YtdlpHelper.CreateYtdlpCommand(VideoPathOrUrl, downloadFilePath,
-                    extractionType == ExtractionType.Audio ? ["-x", "--audio-format", "mp3"] : [])
-                .ExecuteAsync()
-                .Task
-                .ContinueWith(t => t.IsCompletedSuccessfully);
+                if (File.Exists(downloadFilePath)) File.Delete(downloadFilePath);
 
-            if (!downloadedFile)
+                var args = new List<string> { "--no-playlist" };
+                if (extractionType == ExtractionType.Audio)
+                {
+                    args.AddRange(["-x", "--audio-format", "mp3"]);
+                }
+
+                success = await YtdlpHelper.CreateYtdlpCommand(VideoPathOrUrl, downloadFilePath, args)
+                    .ExecuteAsync()
+                    .Task
+                    .ContinueWith(t => t.IsCompletedSuccessfully);
+            }
+
+            if (!success)
             {
                 snackbarService.Show(messageMap.Error.Title, messageMap.Error.Message, ControlAppearance.Danger,
                     null, TimeSpan.FromSeconds(3));
-                IsExtractButtonEnabled = true;
                 return;
             }
 

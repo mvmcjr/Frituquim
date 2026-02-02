@@ -39,6 +39,12 @@
             <CheckBox Content="Abrir pasta depois de extrair"
                       VerticalAlignment="Bottom"
                       IsChecked="{Binding ViewModel.OpenFolderAfterExecution}" />
+
+            <CheckBox Grid.Column="1" Content="Baixar Playlist inteira"
+                      Margin="8,0,0,0"
+                      VerticalAlignment="Bottom"
+                      IsChecked="{Binding ViewModel.ShouldDownloadPlaylist}"
+                      Visibility="{Binding ViewModel.IsPlaylistUrl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
         </Grid>
 
         <Grid Grid.Row="4" Margin="0, 1, 0, 0">

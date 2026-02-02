@@ -33,10 +33,13 @@ public static class YtdlpHelper
         Debug.WriteLine(commandResult.ExitCode != 0 ? "Failed to update yt-dlp" : "yt-dlp updated successfully");
     }
 
-    public static async Task<string> GetFileName(string url, ExtractionType selectedExtractionType)
+    public static async Task<string> GetFileName(string url, ExtractionType selectedExtractionType, bool isPlaylist = false)
     {
+        var args = new List<string> { url, "--get-filename" };
+        if (!isPlaylist) args.Add("--no-playlist");
+
         var commandResult = await CreateBaseCommand()
-            .WithArguments([url, "--get-filename"])
+            .WithArguments(args)
             .ExecuteBufferedAsync();
         var fileName = commandResult.StandardOutput.Trim();
 

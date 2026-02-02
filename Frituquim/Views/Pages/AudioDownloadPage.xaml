@@ -21,9 +21,16 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <CheckBox Grid.Row="0" Content="Abrir pasta depois de extrair"
-                  VerticalAlignment="Bottom"
-                  IsChecked="{Binding ViewModel.OpenFolderAfterExecution}" />
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+            <CheckBox Content="Abrir pasta depois de extrair"
+                      VerticalAlignment="Bottom"
+                      IsChecked="{Binding ViewModel.OpenFolderAfterExecution}" />
+            <CheckBox Content="Baixar Playlist inteira"
+                      Margin="8,0,0,0"
+                      VerticalAlignment="Bottom"
+                      IsChecked="{Binding ViewModel.ShouldDownloadPlaylist}"
+                      Visibility="{Binding ViewModel.IsPlaylistUrl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+        </StackPanel>
 
         <Grid Grid.Row="1" Margin="0, 1, 0, 0">
             <Grid.ColumnDefinitions>
