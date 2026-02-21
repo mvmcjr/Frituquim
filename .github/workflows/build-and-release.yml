@@ -167,7 +167,6 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          Frituquim-x86/Frituquim-x86.zip
           Frituquim-x64/Frituquim-x64.zip
         draft: false
         prerelease: false
