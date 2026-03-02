@@ -16,10 +16,10 @@ jobs:
         
     steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '10.0.x'
         
@@ -30,18 +30,17 @@ jobs:
       run: |
         $ytdlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
         $outputPath = "yt-dlp.exe"
-        Invoke-WebRequest -Uri $ytdlpUrl -OutFile $outputPath
-        Write-Host "Downloaded yt-dlp.exe"
+        try {
+          Invoke-WebRequest -Uri $ytdlpUrl -OutFile $outputPath -ErrorAction Stop
+          Write-Host "Downloaded yt-dlp.exe for ${{ matrix.architecture }}"
+        } catch {
+          Write-Error "Failed to download yt-dlp from $ytdlpUrl : $_"
+          exit 1
+        }
         
     - name: Download FFmpeg
       run: |
-        # Determine FFmpeg download URL based on architecture
-        if ("${{ matrix.architecture }}" -eq "x64") {
-          $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
-        } else {
-          # For x86, use defisym/FFmpeg-Builds-Win32 which maintains 32-bit builds
-          $ffmpegUrl = "https://github.com/defisym/FFmpeg-Builds-Win32/releases/latest/download/ffmpeg-master-latest-win32-gpl.zip"
-        }
+        $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
         
         $tempZip = "ffmpeg-temp.zip"
         $extractPath = "ffmpeg-temp"
@@ -114,10 +113,11 @@ jobs:
         Write-Host "Created $archiveName"
         
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Frituquim-${{ matrix.architecture }}
         path: Frituquim-${{ matrix.architecture }}.zip
+        if-no-files-found: error
         
   release:
     needs: build
@@ -126,13 +126,25 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         
     - name: Download all artifacts
-      uses: actions/download-artifact@v5
-      
+      uses: actions/download-artifact@v8
+      with:
+        path: artifacts
+        merge-multiple: true
+        
+    - name: Verify binaries exist
+      run: |
+        ZIP_COUNT=$(ls artifacts/*.zip 2>/dev/null | wc -l || echo 0)
+        if [ "$ZIP_COUNT" -eq 0 ]; then
+          echo "Error: No binaries found! Aborting release."
+          exit 1
+        fi
+        echo "Found $ZIP_COUNT zip files. Proceeding with release."
+        
     - name: Generate changelog
       id: changelog
       run: |
@@ -166,10 +178,10 @@ jobs:
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: |
-          Frituquim-x64/Frituquim-x64.zip
+        files: artifacts/*.zip
         draft: false
         prerelease: false
         body: ${{ steps.changelog.outputs.changelog_content }}
+        fail_on_unmatched_files: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
